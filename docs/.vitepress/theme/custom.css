@@ -1,0 +1,73 @@
+:root {
+  --vp-c-brand-1: #0f766e;
+  --vp-c-brand-2: #0ea5e9;
+  --vp-c-brand-3: #f97316;
+}
+
+/* The page layout leaves the full viewport below VitePress navigation free. */
+.playground {
+  height: calc(100dvh - var(--vp-nav-height));
+  min-height: 480px;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+}
+
+.playground-header {
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.playground-footer {
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.playground-canvas {
+  background: #f8fafc;
+}
+
+.dark .playground-canvas {
+  background: #20252b;
+}
+
+.playground-select {
+  min-width: 160px;
+  appearance: auto;
+}
+
+.playground-button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--vp-c-bg);
+}
+
+.playground-button:hover:not(:disabled) {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+
+.playground-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.playground-button:focus-visible,
+.playground-select:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 3px;
+}
+
+.x6-vue-node-card {
+  width: 100%;
+  height: 100%;
+  color: #334155;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 8%);
+  padding: 10px;
+  box-sizing: border-box;
+}

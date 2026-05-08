@@ -1,0 +1,14 @@
+packages:
+  - docs
+
+allowBuilds:
+  esbuild: true
+
+overrides:
+  vite: ^8.3.0
+
+ignoreWorkspaceRootCheck: true
+
+shellEmulator: true
+
+pmOnFail: warn
