@@ -16,10 +16,7 @@ on image export, Vue 2, mixed edge/node ordering or X6 editing plugins.
 | Styling inside Vue nodes                     | Same Vue styles plus package `style.css`                 | SVG selectors targeting `fo`/`foContent` no longer address Vue content |
 | Node data event subscription                 | `useX6NodeData(node)` or your own subscription           | The helper is a shallow, one-way subscription                          |
 
-The current development version is `0.0.0`. The npm registry did not expose a
-`latest` release for `x6-vue-html-shape` when checked on 2026-09-14. Until a release
-is published, use the repository workspace or a locally built package as explained
-in [Getting Started](./getting-started.md).
+See [Getting Started](./getting-started.md#installation) for installation.
 
 ## Register component-only shapes
 

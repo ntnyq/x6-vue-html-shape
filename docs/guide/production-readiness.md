@@ -7,10 +7,9 @@ every official Vue shape feature.
 
 ## Current baseline
 
-The `0.0.0` development version declares peer ranges Vue `^3.3.0` and X6
-`^3.0.1`. Repository tests use Vue 3.5.46 and X6 3.1.8. An earlier packed build
-passed the original browser suite in a clean consumer with Vue 3.3.0 and X6 3.0.1.
-Follow [Getting Started](./getting-started.md) for local evaluation.
+The package declares peer ranges Vue `^3.3.0` and X6 `^3.0.1`. Repository tests
+use Vue 3.5.46 and X6 3.1.8. An earlier packed build passed the original browser
+suite in a clean consumer with Vue 3.3.0 and X6 3.0.1.
 
 ## Implemented behavior
 

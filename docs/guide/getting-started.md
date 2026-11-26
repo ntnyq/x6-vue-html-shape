@@ -4,22 +4,7 @@
 nodes, edges and graph interaction. It supports Vue `^3.3.0` and X6 `^3.0.1`.
 Use X6 3.0.1 or later because the 3.0.0 npm tarball lacks its package entry points.
 
-## Current availability
-
-The current checkout is a `0.0.0` development version. Start with the local
-workspace.
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm docs:dev
-```
-
-To try it in another project, run `pnpm pack` after building, then install the
-resulting tarball there with `pnpm add /path/to/x6-vue-html-shape-0.0.0.tgz`.
-Install the compatible Vue and X6 peer dependencies in that project as well.
-
-Once a release is published, the registry installation command is:
+## Installation
 
 ```bash
 pnpm add x6-vue-html-shape @antv/x6 vue
