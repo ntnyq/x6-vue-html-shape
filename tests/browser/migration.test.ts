@@ -308,16 +308,20 @@ describe('X6 MiniMap with Vue shapes', () => {
           },
         }),
       )
+      const viewMounted = new Promise<void>(resolve => {
+        preview.once('view:mounted', () => resolve())
+      })
+
       await nextTick()
       node ??= graph.addNode({ shape: SHAPE, x: 80, y: 70 })
+      await viewMounted
+      await nextTick()
       const mainCard = graph.container.querySelector(HTML_NODE)
+      const card = preview.container.querySelector(HTML_NODE)!
 
-      await expect
-        .poll(() => preview.container.querySelector(HTML_NODE)?.textContent)
-        .toBe('Shared label')
+      expect(card.textContent).toBe('Shared label')
       expect(mainCard?.textContent).toBe('Shared label')
       expect(preview.getCellById(node.id)).toBe(node)
-      const card = preview.container.querySelector(HTML_NODE)!
       const body = preview
         .findViewByCell(node)!
         .container.querySelector('rect')!

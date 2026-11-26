@@ -1,6 +1,6 @@
 {
   "name": "x6-vue-html-shape",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "X6 Vue shape extension without SVG foreignObject, rendering Vue nodes in an HTML overlay layer.",
   "keywords": [
     "antv",
