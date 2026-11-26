@@ -6,15 +6,15 @@ on image export, Vue 2, mixed edge/node ordering or X6 editing plugins.
 
 ## Map APIs and setup
 
-| Official usage                               | Local replacement                                               | Difference                                                             |
-| -------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `register({ shape, component })`             | `registerVueHtmlNode({ shape, component })`                     | Local registration rejects duplicates unless `overwrite: true`         |
-| Additional defaults in `register(...)`       | `Graph.registerNode(...)` plus `registerVueShapeComponent(...)` | The local shortcut does not forward arbitrary X6 metadata              |
-| `getTeleport()`                              | `createVueHtmlTeleport(graph)`                                  | One host per graph, mounted before nodes                               |
-| Automatic `vue-shape` registration on import | `registerVueHtmlShapeNode(...)`                                 | Explicit registration, default name `vue-html-shape`                   |
-| SVG-native transform inheritance             | `setupVueHtmlShapeSync(graph)`                                  | Required to follow graph transforms                                    |
-| Styling inside Vue nodes                     | Same Vue styles plus package `style.css`                        | SVG selectors targeting `fo`/`foContent` no longer address Vue content |
-| Node data event subscription                 | `useX6NodeData(node)` or your own subscription                  | The helper is a shallow, one-way subscription                          |
+| Official usage                               | Local replacement                                        | Difference                                                             |
+| -------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `register({ shape, component })`             | `registerVueHtmlNode({ shape, component })`              | Local registration rejects duplicates unless `overwrite: true`         |
+| Additional defaults in `register(...)`       | `registerVueHtmlNode({ shape, component, ...defaults })` | X6 node configuration is forwarded and the HTML view is assigned       |
+| `getTeleport()`                              | `createVueHtmlTeleport(graph)`                           | One host per graph, mounted before nodes                               |
+| Automatic `vue-shape` registration on import | `registerVueHtmlShapeNode(...)`                          | Explicit registration, default name `vue-html-shape`                   |
+| SVG-native transform inheritance             | `setupVueHtmlShapeSync(graph)`                           | Required to follow graph transforms                                    |
+| Styling inside Vue nodes                     | Same Vue styles plus package `style.css`                 | SVG selectors targeting `fo`/`foContent` no longer address Vue content |
+| Node data event subscription                 | `useX6NodeData(node)` or your own subscription           | The helper is a shallow, one-way subscription                          |
 
 The current development version is `0.0.0`. The npm registry did not expose a
 `latest` release for `x6-vue-html-shape` when checked on 2026-09-14. Until a release
@@ -48,26 +48,21 @@ you intend to replace an existing registration.
 
 ## Preserve inherited node defaults
 
-The official `register` forwards additional metadata. The local convenience
-function only accepts shape, component, primer and overwrite options. For shared
-X6 defaults, register the base shape and a derived shape explicitly:
+Pass shared X6 defaults directly to the registration function. Use `inherit`
+when the shape should start from an existing X6 node definition.
 
 ```ts
-import { Graph } from '@antv/x6'
-import {
-  registerVueHtmlShapeNode,
-  registerVueShapeComponent,
-} from 'x6-vue-html-shape'
+import { registerVueHtmlNode } from 'x6-vue-html-shape'
 import UserNode from './UserNode.vue'
 
-registerVueHtmlShapeNode()
-Graph.registerNode('user-node', {
-  inherit: 'vue-html-shape',
+registerVueHtmlNode({
+  shape: 'user-node',
+  component: UserNode,
+  inherit: 'rect',
   width: 220,
   height: 100,
-  // Put shared X6 attrs/ports and other model defaults here.
+  ports: [{ id: 'out' }],
 })
-registerVueShapeComponent('user-node', UserNode)
 ```
 
 Do not carry over `view: 'vue-shape-view'`, `fo`/`foContent` attributes or a custom

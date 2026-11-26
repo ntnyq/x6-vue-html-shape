@@ -66,12 +66,15 @@ export default defineConfig({
     socialLinks: [
       {
         icon: 'github',
-        link: 'https://github.com/ntnyq/x6-extension-vue-shape',
+        link: 'https://github.com/ntnyq/x6-vue-html-shape',
       },
     ],
   },
   title: 'x6-vue-html-shape',
   vite: {
+    build: {
+      chunkSizeWarningLimit: 1000,
+    },
     plugins: [
       UnoCSS({
         inspector: false,

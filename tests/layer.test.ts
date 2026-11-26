@@ -55,4 +55,21 @@ describe('layer', () => {
 
     expect(container.querySelector('.x6-vue-html-layer')).toBeNull()
   })
+
+  it('keeps layers and transforms separate for nested graphs', () => {
+    container = document.createElement('div')
+    const innerContainer = document.createElement('div')
+
+    document.body.append(container)
+    container.append(innerContainer)
+    const outerGraph = asGraph({ container })
+    const innerGraph = asGraph({ container: innerContainer })
+    const inner = ensureVueHtmlLayer(innerGraph)
+    const outer = ensureVueHtmlLayer(outerGraph)
+
+    expect(outer.parentElement).toBe(container)
+    expect(inner.parentElement).toBe(innerContainer)
+    removeVueHtmlLayer(outerGraph)
+    expect(inner.parentElement).toBe(innerContainer)
+  })
 })

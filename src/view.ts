@@ -12,6 +12,7 @@ import { shouldStopGraphMouseDown } from './events'
 import {
   ensureVueHtmlLayer,
   releaseVueHtmlRoot,
+  removeEmptyVueHtmlLayer,
   trackVueHtmlTransform,
 } from './layer'
 import { getVueShapeComponent } from './registry'
@@ -20,8 +21,17 @@ import { updateHtmlStyle } from './utils/dom'
 import { getHtmlNodeGeometry } from './utils/geometry'
 import { mountVueComponent } from './utils/vue'
 
+// Reserve the top CSS z-index even when the X6 model already uses very high values.
+const SELECTED_HTML_Z_INDEX = 2_147_483_647
+
 function stopInteractiveMouseDown(event: Event) {
-  if (shouldStopGraphMouseDown(event.target)) {
+  const originalTarget = event.composedPath()[0]
+
+  if (
+    shouldStopGraphMouseDown(event.target) ||
+    (originalTarget !== event.target &&
+      shouldStopGraphMouseDown(originalTarget ?? null))
+  ) {
     event.stopPropagation()
   }
 }
@@ -30,7 +40,9 @@ function stopInteractiveMouseDown(event: Event) {
  * X6 node view that renders Vue content into an external HTML overlay layer.
  */
 export class VueHtmlShapeView extends NodeView {
-  /** X6 action key used to trigger HTML rendering updates. */
+  /**
+   * X6 action key used to trigger HTML rendering updates.
+   */
   public static action = 'vue-html' as never
 
   private app: Pick<App, 'unmount'> | undefined
@@ -39,23 +51,30 @@ export class VueHtmlShapeView extends NodeView {
   private mountedComponent: Component | undefined
   private componentProps = shallowRef<Record<string, unknown>>({})
   private htmlStyle: Record<string, string> = {}
+
+  /**
+   * X6 action key for wrapper attribute, geometry and visibility updates.
+   */
   public static geometryAction = 'vue-html-geometry' as never
 
   /**
    * Handle X6 view updates and refresh HTML render/position/visibility state.
    *
-   * @param {number} flag - Update bitmask from X6.
-   * @returns {number} Remaining update flags after handling HTML action.
+   * @param flag - Update bitmask from X6.
+   * @returns Remaining update flags after handling HTML action.
    */
   public override confirmUpdate(flag: number) {
     const ret = super.confirmUpdate(flag)
 
     const updated = this.handleAction(ret, VueHtmlShapeView.action, () => {
       this.renderVueComponent()
-      this.updateHtmlAttributes()
       this.updateHtmlPosition()
       this.updateHtmlVisible()
     })
+
+    if (this.hasAction(flag, ['render', 'update', VueHtmlShapeView.action])) {
+      this.updateHtmlCursor()
+    }
 
     return this.handleAction(updated, VueHtmlShapeView.geometryAction, () => {
       this.updateHtmlAttributes()
@@ -65,14 +84,19 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * @returns {VueHtmlShapeProperties} Node properties for HTML rendering.
+   * Read the X6 node metadata used by the HTML view.
+   *
+   * @returns Node properties for HTML rendering.
    */
   protected getNodeProperties(): VueHtmlShapeProperties {
     return this.cell.getProp() as VueHtmlShapeProperties
   }
 
   /**
-   * @returns {Component | undefined} Resolved Vue component.
+   * Resolve the inline component, then try the node shape and default shape
+   * registrations in that order.
+   *
+   * @returns Component to render, if one is available.
    */
   protected getComponent(): Component | undefined {
     const props = this.getNodeProperties()
@@ -85,7 +109,9 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * @returns {{ contentRoot: HTMLDivElement, htmlRoot: HTMLDivElement }} HTML roots used for rendering.
+   * Create or reuse the node's HTML wrapper and Vue mount target.
+   *
+   * @returns The Vue mount target and its outer wrapper.
    */
   protected ensureHtmlRoot() {
     if (this.htmlRoot && this.contentRoot) {
@@ -95,13 +121,8 @@ export class VueHtmlShapeView extends NodeView {
       }
     }
 
-    const props = this.getNodeProperties()
-    const { graph } = this
-    const layer = props.getContainer
-      ? props.getContainer(graph, this.cell)
-      : ensureVueHtmlLayer(graph)
-
-    const htmlRoot = document.createElement('div')
+    const { ownerDocument } = this.graph.container
+    const htmlRoot = ownerDocument.createElement('div')
 
     htmlRoot.className = HTML_NODE_CLASS
     htmlRoot.dataset['x6NodeId'] = String(this.cell.id)
@@ -110,11 +131,10 @@ export class VueHtmlShapeView extends NodeView {
     htmlRoot.addEventListener('mousedown', stopInteractiveMouseDown)
     htmlRoot.addEventListener('touchstart', stopInteractiveMouseDown)
 
-    const contentRoot = document.createElement('div')
+    const contentRoot = ownerDocument.createElement('div')
 
     contentRoot.className = HTML_NODE_CONTENT_CLASS
     htmlRoot.append(contentRoot)
-    layer.append(htmlRoot)
 
     this.htmlRoot = htmlRoot
     this.contentRoot = contentRoot
@@ -126,7 +146,8 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * Mount or remount the resolved Vue component into the HTML content root.
+   * Update component props, mount or remount the resolved component as needed,
+   * or remove the HTML wrapper when no component is available.
    */
   protected renderVueComponent() {
     const component = this.getComponent()
@@ -140,6 +161,7 @@ export class VueHtmlShapeView extends NodeView {
     const props = this.getNodeProperties()
     const { contentRoot } = this.ensureHtmlRoot()
 
+    this.updateHtmlAttributes()
     this.componentProps.value = props.props || {}
 
     const shouldRemount =
@@ -161,6 +183,9 @@ export class VueHtmlShapeView extends NodeView {
     }
   }
 
+  /**
+   * Update the wrapper container, classes, styles and transform subscription.
+   */
   protected updateHtmlAttributes() {
     if (!this.htmlRoot) {
       return
@@ -173,9 +198,15 @@ export class VueHtmlShapeView extends NodeView {
 
     if (this.htmlRoot.parentElement !== container) {
       container.append(this.htmlRoot)
+      removeEmptyVueHtmlLayer(this.graph)
     }
 
-    this.htmlRoot.className = [HTML_NODE_CLASS, props.htmlClassName]
+    // X6 delegates node entry and exit through its cell class.
+    this.htmlRoot.className = [
+      HTML_NODE_CLASS,
+      this.prefixClassName('cell'),
+      props.htmlClassName,
+    ]
       .filter(Boolean)
       .join(' ')
     updateHtmlStyle(this.htmlRoot, this.htmlStyle, props.htmlStyle || {})
@@ -206,7 +237,19 @@ export class VueHtmlShapeView extends NodeView {
     )
     this.htmlRoot.style.transformOrigin = '0 0'
 
-    this.htmlRoot.style.zIndex = String(node.getZIndex() || 0)
+    const zIndex = Math.min(node.getZIndex() || 0, SELECTED_HTML_Z_INDEX - 1)
+
+    this.htmlRoot.style.zIndex = String(
+      this.graph.isSelected?.(node) ? SELECTED_HTML_Z_INDEX : zIndex,
+    )
+  }
+
+  private updateHtmlCursor() {
+    this.htmlRoot?.style.setProperty(
+      '--x6-vue-cursor',
+      this.container.ownerDocument.defaultView?.getComputedStyle(this.container)
+        .cursor ?? '',
+    )
   }
 
   /**
@@ -232,7 +275,7 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * Unmount the Vue app and clear content root.
+   * Unmount the Vue component and clear its stored mount handle.
    */
   protected unmountVueComponent() {
     this.app?.unmount()
@@ -260,11 +303,11 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * Skip graph-level drag behavior when mouse down starts on interactive targets.
+   * Delegate mouse down to X6 unless it started on an interactive element.
    *
-   * @param {Dom.MouseDownEvent} event - Mouse event passed by X6.
-   * @param {number} x - Graph x coordinate.
-   * @param {number} y - Graph y coordinate.
+   * @param event - Mouse event passed by X6.
+   * @param x - Graph x coordinate.
+   * @param y - Graph y coordinate.
    */
   public override onMouseDown(event: Dom.MouseDownEvent, x: number, y: number) {
     if (shouldStopGraphMouseDown(event.target)) {
@@ -275,9 +318,19 @@ export class VueHtmlShapeView extends NodeView {
   }
 
   /**
-   * Unmount view and cleanup HTML overlay roots.
+   * Mirror the SVG view cursor after X6 updates its interaction classes.
    *
-   * @returns {this} Current view instance.
+   * @param event - Mouse event passed by X6.
+   */
+  public override onMouseEnter(event: Dom.MouseEnterEvent) {
+    super.onMouseEnter(event)
+    this.updateHtmlCursor()
+  }
+
+  /**
+   * Unmount the view and clean up its HTML overlay roots.
+   *
+   * @returns Current view instance.
    */
   public override unmount() {
     this.removeHtmlRoot()

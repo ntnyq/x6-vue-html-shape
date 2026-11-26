@@ -1,4 +1,5 @@
 import { Node } from '@antv/x6'
+import type { Graph } from '@antv/x6'
 import { describe, expect, it } from 'vitest'
 import { createApp, h, nextTick } from 'vue'
 import RichTextNodeCard from '../docs/components/RichTextNodeCard.vue'
@@ -11,7 +12,9 @@ describe('rich text node', () => {
     const container = document.createElement('div')
 
     document.body.append(container)
-    const app = createApp(() => h(RichTextNodeCard, { node, graph: {} }))
+    const app = createApp(() =>
+      h(RichTextNodeCard, { node, graph: {} as Graph }),
+    )
 
     try {
       app.mount(container)
@@ -29,6 +32,10 @@ describe('rich text node', () => {
       await nextTick()
       expect(node.getData().html).toBe('<p>Updated notes</p> local edit')
       expect(editor.innerHTML).toBe(node.getData().html)
+
+      node.setData({ html: '<p><b>Allowed</b></p><svg></svg>' })
+      await nextTick()
+      expect(editor.innerHTML).toBe('<p><b>Allowed</b></p>')
     } finally {
       app.unmount()
       container.remove()

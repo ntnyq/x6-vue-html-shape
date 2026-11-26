@@ -4,6 +4,9 @@
     "target": "ESNext",
     "lib": ["DOM", "ES2023"],
     "module": "ESNext",
+    "paths": {
+      "x6-vue-html-shape": ["./src/index.ts"]
+    },
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true

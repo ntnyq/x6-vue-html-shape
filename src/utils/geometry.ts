@@ -6,10 +6,11 @@ const RADIANS_PER_DEGREE = Math.PI / DEGREES_PER_HALF_TURN
 
 /**
  * Compose node-centered rotation with the graph's complete affine matrix.
- * @param {Node} node - Node whose local box is projected.
- * @param {Graph} graph - Graph owning the viewport matrix.
- * @param {VueHtmlShapeProperties} props - Content scaling and container options.
- * @returns {object} Wrapper size and transform styles.
+ *
+ * @param node - Node whose local box is projected.
+ * @param graph - Graph owning the viewport matrix.
+ * @param props - Scaling and container options.
+ * @returns CSS width, height and transform for the node wrapper.
  */
 export function getHtmlNodeGeometry(
   node: Node,

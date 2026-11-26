@@ -87,11 +87,9 @@ describe('Vue HTML view', () => {
     node.setProp('htmlClassName', 'new')
     node.setProp('htmlStyle', { backgroundColor: 'blue' }, { rewrite: true })
     node.setProp('interactive', false)
-    expect([...root.classList]).toStrictEqual([
-      'x6-vue-html-node',
-      'new',
-      'is-non-interactive',
-    ])
+    expect(root.className).toBe(
+      'x6-vue-html-node x6-cell new is-non-interactive',
+    )
     expect({
       color: root.style.color,
       accent: root.style.getPropertyValue('--accent'),
@@ -126,12 +124,23 @@ describe('Vue HTML view', () => {
 
       return () => h('span', 'Node')
     })
-    const { node, root } = mountView({ component })
-    const container = document.createElement('div')
+    const { container, node, root } = mountView({ component })
+    const custom = document.createElement('div')
 
-    node.setProp('getContainer', () => container)
-    expect(root.parentElement).toBe(container)
+    node.setProp('getContainer', () => custom)
+    expect(root.parentElement).toBe(custom)
+    expect(container.querySelector('.x6-vue-html-layer')).toBeNull()
     expect(mounted).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('resolves a custom container once during the initial mount', () => {
+    const container = document.createElement('div')
+    const getContainer = vi.fn(() => container)
+
+    mountView({ getContainer })
+
+    expect(getContainer).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('.x6-vue-html-node')).toBeTruthy()
   })
 
   it('identifies HTML descendants as the owning X6 cell', () => {
@@ -189,6 +198,23 @@ describe('Vue HTML view', () => {
       expect(stopped).toHaveBeenCalledExactlyOnceWith(expect.any(Event))
     },
   )
+
+  it('protects native controls inside an open shadow root', () => {
+    const { container, root } = mountView()
+    const host = document.createElement('div')
+    const shadow = host.attachShadow({ mode: 'open' })
+    const input = document.createElement('input')
+    const graphHandler = vi.fn()
+
+    shadow.append(input)
+    root.append(host)
+    container.addEventListener('mousedown', graphHandler)
+    input.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, composed: true }),
+    )
+    host.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    expect(graphHandler).toHaveBeenCalledTimes(1)
+  })
 
   it('updates and removes extra props without losing component state', async () => {
     const mounted = vi.fn()

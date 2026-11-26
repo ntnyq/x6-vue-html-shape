@@ -7,14 +7,14 @@ export interface MountedVueInstance {
   root: HTMLElement;
   component: Component;
 }
-export interface RegisterVueHtmlNodeOptions {
+export interface RegisterVueHtmlNodeOptions extends RegisterVueHtmlShapeOptions {
   shape: string;
   component: Component;
-  primer?: Primer;
-  overwrite?: boolean;
 }
-export interface RegisterVueHtmlShapeOptions {
+export interface RegisterVueHtmlShapeOptions extends X6NodeConfig {
   shape?: string;
+  inherit?: string | typeof Node;
+  label?: string;
   compatibleShapeName?: boolean;
   overwrite?: boolean;
   primer?: Primer;
@@ -89,10 +89,12 @@ export declare class VueHtmlShapeView extends NodeView {
   protected renderVueComponent(): void;
   protected updateHtmlAttributes(): void;
   updateHtmlPosition(): void;
+  private updateHtmlCursor;
   updateHtmlVisible(): void;
   protected unmountVueComponent(): void;
   protected removeHtmlRoot(): void;
   onMouseDown(_: Dom.MouseDownEvent, _: number, _: number): void;
+  onMouseEnter(_: Dom.MouseEnterEvent): void;
   unmount(): this;
 }
 // #endregion
@@ -127,4 +129,8 @@ export declare const STYLE_ID: string;
 // #region Default Export
 declare function _default(_: App, _?: VueHtmlShapePluginOptions): void;
 export default _default
+// #endregion
+
+// #region Referenced (internal)
+type X6NodeConfig = Parameters<typeof Node.define>[0];
 // #endregion

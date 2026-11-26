@@ -1,15 +1,16 @@
 <script setup lang="ts">
+import type { Graph, Node } from '@antv/x6'
 import {
   ElDatePicker,
   ElForm,
   ElFormItem,
   ElInput,
-  ElOption,
   ElSelect,
   ElSwitch,
 } from 'element-plus'
 import { computed } from 'vue'
-import { useNodeData } from './useNodeData'
+import type { Component } from 'vue'
+import { useX6NodeData } from 'x6-vue-html-shape'
 
 interface FormNodeData {
   title: string
@@ -20,17 +21,19 @@ interface FormNodeData {
   dueDate: string
 }
 
-const PRIORITY_OPTIONS: string[] = ['P0', 'P1', 'P2']
+const PRIORITY_OPTIONS = ['P0', 'P1', 'P2'].map(value => ({
+  label: value,
+  value,
+}))
+// Element Plus exposes the options prop definition as its value type.
+const PrioritySelect = ElSelect as unknown as Component<{
+  modelValue: string
+  options: typeof PRIORITY_OPTIONS
+  'onUpdate:modelValue'?: (value: string) => void
+}>
 
-interface X6NodeLike {
-  getData: <T = unknown>() => T
-  setData: (data: unknown) => void
-  on: (event: string, handler: () => void) => void
-  off: (event: string, handler: () => void) => void
-}
-
-const props = defineProps<{ node: X6NodeLike; graph: unknown }>()
-const data = useNodeData<FormNodeData>(props.node)
+const props = defineProps<{ node: Node; graph: Graph }>()
+const data = useX6NodeData<FormNodeData | undefined>(props.node)
 
 function patchData(patch: Partial<FormNodeData>) {
   props.node.setData({
@@ -61,14 +64,14 @@ const urgent = computed({
 
 const dueDate = computed({
   get: () => data.value?.dueDate || '',
-  set: (value: string) => patchData({ dueDate: value }),
+  set: (value: string | null) => patchData({ dueDate: value ?? '' }),
 })
 </script>
 
 <template>
   <div class="x6-vue-node-card border-lime-300 bg-lime-50">
     <div class="mb-2 text-xs font-bold text-lime-900">
-      {{ data.title || 'Form Node' }}
+      {{ data?.title || 'Form Node' }}
     </div>
 
     <ElForm
@@ -92,15 +95,10 @@ const dueDate = computed({
 
       <div class="grid grid-cols-2 gap-2">
         <ElFormItem label="Priority">
-          <ElSelect v-model="priority">
-            <!-- @vue-expect-error types -->
-            <ElOption
-              v-for="item in PRIORITY_OPTIONS"
-              :key="item"
-              :label="item"
-              :value="item"
-            />
-          </ElSelect>
+          <PrioritySelect
+            v-model="priority"
+            :options="PRIORITY_OPTIONS"
+          />
         </ElFormItem>
 
         <ElFormItem label="Urgent">

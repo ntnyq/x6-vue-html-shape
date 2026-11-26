@@ -1,4 +1,4 @@
-import { Graph } from '@antv/x6'
+import { Graph, Selection } from '@antv/x6'
 import type { Node } from '@antv/x6'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
@@ -8,16 +8,18 @@ import {
   h,
   inject,
   nextTick,
+  onMounted,
   onUnmounted,
   provide,
 } from 'vue'
-import type { App } from 'vue'
+import type { App, Component } from 'vue'
 import {
   createVueHtmlTeleport,
   registerVueHtmlNode,
   setupVueHtmlShapeSync,
   unregisterVueShapeComponent,
 } from '../../src'
+import type { RegisterVueHtmlShapeOptions } from '../../src'
 import '../../src/style.css'
 
 const graphs: Graph[] = []
@@ -56,15 +58,16 @@ function createGraph() {
 }
 
 function register(
-  component = defineComponent(
+  component: Component = defineComponent(
     () => () =>
       h('div', { style: 'width:100%;height:100%;background:#ccd' }, 'Node'),
   ),
+  defaults: RegisterVueHtmlShapeOptions = {},
 ) {
   const shape = `browser-node-${shapes.length}`
 
   shapes.push(shape)
-  registerVueHtmlNode({ shape, component })
+  registerVueHtmlNode({ ...defaults, shape, component })
 
   return shape
 }
@@ -96,7 +99,147 @@ function expectAligned(graph: Graph, node: Node) {
   }
 }
 
+describe('SVG and HTML node presentation', () => {
+  it('centers the SVG label and preserves the Vue overlay', () => {
+    const graph = createGraph()
+    const shape = register(
+      defineComponent(() => () => h('span', 'Vue')),
+      {
+        width: 160,
+        height: 90,
+        label: 'Registered label',
+      },
+    )
+    const node = graph.addNode({ shape, x: 100, y: 80, primer: 'ellipse' })
+    const view = graph.findViewByCell(node)!
+    const label = view.container.querySelector('text')!
+    const body = view.container.querySelector('ellipse')!
+
+    expect(label.namespaceURI).toBe('http://www.w3.org/2000/svg')
+    expect(label.textContent).toMatch(/^Registered\slabel$/u)
+    expect(getRoot(graph, node).textContent).toBe('Vue')
+    const { x, y, width, height } = body.getBoundingClientRect()
+    const text = label.getBoundingClientRect()
+
+    expect(Math.abs(text.x + text.width / 2 - (x + width / 2))).toBeLessThan(1)
+    expect(Math.abs(text.y + text.height / 2 - (y + height / 2))).toBeLessThan(
+      4,
+    )
+    node.setAttrByPath('label/text', 'Changed')
+    expect(label.textContent).toBe('Changed')
+    const override = graph.addNode({ shape, label: 'Instance label' })
+
+    expect(override.getAttrByPath('label/text')).toBe('Instance label')
+    expect(view.container.querySelector('foreignObject')).toBeNull()
+  })
+
+  it('raises selected HTML nodes above overlaps and restores model order', async () => {
+    const graph = createGraph()
+
+    graph.use(new Selection())
+    const shape = register()
+    const geometry = { shape, x: 100, y: 80, width: 160, height: 90 }
+    const back = graph.addNode({ ...geometry, zIndex: 2 })
+    const front = graph.addNode({ ...geometry, zIndex: 2_147_483_647 })
+    const backRoot = getRoot(graph, back)
+    const frontRoot = getRoot(graph, front)
+    const { x, y } = backRoot.getBoundingClientRect()
+    const hit = () =>
+      document.elementFromPoint(x + 20, y + 20)?.closest('.x6-vue-html-node')
+
+    expect(hit()).toBe(frontRoot)
+    graph.select(back)
+    await nextFrame()
+    expect(hit()).toBe(backRoot)
+    expect(back.getZIndex()).toBe(2)
+    back.setZIndex(4)
+    expect(hit()).toBe(backRoot)
+    graph.unselect(back)
+    await nextFrame()
+    expect(hit()).toBe(frontRoot)
+    expect(backRoot.style.zIndex).toBe('4')
+
+    setupVueHtmlShapeSync(graph)()
+    graph.select(back)
+    expect(hit()).toBe(frontRoot)
+    setupVueHtmlShapeSync(graph)
+    expect(hit()).toBe(backRoot)
+  })
+
+  it('mirrors the SVG view cursor and honors an explicit HTML override', () => {
+    const graph = createGraph()
+    const node = graph.addNode({
+      shape: register(),
+      width: 100,
+      height: 60,
+      attrs: { root: { style: { cursor: 'crosshair' } } },
+    })
+    const root = getRoot(graph, node)
+    const svg = graph.findViewByCell(node)!.container
+    const cursor = () => getComputedStyle(root).cursor
+
+    expect(getComputedStyle(svg).cursor).toBe('crosshair')
+    expect(cursor()).toBe('crosshair')
+    node.setAttrByPath('root/style/cursor', 'help')
+    expect(cursor()).toBe('help')
+    node.setProp('htmlStyle', { cursor: 'pointer' })
+    node.setAttrByPath('root/style/cursor', 'wait')
+    expect(cursor()).toBe('pointer')
+    node.removeProp('htmlStyle')
+    expect(cursor()).toBe('wait')
+  })
+
+  it('refreshes the cursor when X6 updates its movability class on hover', async () => {
+    const graph = createGraph()
+    const node = graph.addNode({
+      shape: register(),
+      x: 100,
+      y: 80,
+      width: 160,
+      height: 90,
+    })
+    const root = getRoot(graph, node)
+
+    expect(getComputedStyle(root).cursor).toBe('move')
+    graph.options.interacting = { nodeMovable: false }
+
+    // Start over blank canvas so X6 receives a fresh node entry event.
+    await page
+      .elementLocator(graph.container)
+      .hover({ position: { x: 20, y: 20 } })
+    await page.elementLocator(root).hover()
+    await expect.poll(() => getComputedStyle(root).cursor).toBe('default')
+  })
+})
+
 describe('real X6 graph integration', () => {
+  it('mounts once when the component initializes node data synchronously', () => {
+    const graph = createGraph()
+    const mounted = vi.fn()
+    const unmounted = vi.fn()
+    const shape = register(
+      defineComponent(
+        (props: { node: Node }) => {
+          onMounted(() => {
+            mounted()
+            props.node.setData({ initialized: true })
+          })
+          onUnmounted(unmounted)
+
+          return () => h('div', 'Node')
+        },
+        { props: ['node'] },
+      ),
+    )
+
+    const node = graph.addNode({ shape })
+
+    expect(node.getData()).toEqual({ initialized: true })
+    expect(mounted).toHaveBeenCalledTimes(1)
+    node.remove()
+    expect(unmounted).toHaveBeenCalledTimes(1)
+  })
+
   it('drags an HTML node through native X6 event delegation', async () => {
     const graph = createGraph()
     const node = graph.addNode({

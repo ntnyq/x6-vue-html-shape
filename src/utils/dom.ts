@@ -2,9 +2,10 @@ import { STYLE_ID } from '../constants'
 
 /**
  * Replace caller-owned wrapper styles, including removed custom properties.
- * @param {HTMLElement} root - Node wrapper.
- * @param {Record<string, string>} previous - Previously applied styles.
- * @param {Record<string, string>} current - Replacement styles.
+ *
+ * @param root - Node wrapper.
+ * @param previous - Previously applied styles.
+ * @param current - Replacement styles.
  */
 export function updateHtmlStyle(
   root: HTMLElement,
@@ -42,6 +43,7 @@ const STYLE_TEXT = `
   box-sizing: border-box;
   transform-origin: 0 0;
   pointer-events: auto;
+  cursor: var(--x6-vue-cursor, auto);
   contain: layout style;
 }
 

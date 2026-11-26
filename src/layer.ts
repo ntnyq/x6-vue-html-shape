@@ -4,21 +4,27 @@ import { HTML_LAYER_CLASS } from './constants'
 const layerMap = new WeakMap<HTMLElement, HTMLElement>()
 const transformCallbacks = new WeakMap<Graph, Map<HTMLElement, () => void>>()
 
+function updateLayerMatrix(graph: Graph, layer: HTMLElement) {
+  const matrix = graph.matrix()
+  const transform = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`
+
+  if (layer.style.getPropertyValue('--x6-vue-transform') !== transform) {
+    layer.style.setProperty('--x6-vue-transform', transform)
+  }
+}
+
 /**
  * Share the complete X6 matrix through an inherited CSS custom property.
- * Only nodes opting out of content scaling or using a custom container need JS updates.
- * @param {Graph} graph - Graph owning the layer and matrix.
+ * Nodes using custom containers or opting out of content scaling receive
+ * transform updates through their registered callbacks.
+ *
+ * @param graph - Graph owning the layer and matrix.
  */
 export function updateVueHtmlLayerTransform(graph: Graph) {
   const layer = layerMap.get(graph.container)
 
   if (layer) {
-    const matrix = graph.matrix()
-    const transform = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`
-
-    if (layer.style.getPropertyValue('--x6-vue-transform') !== transform) {
-      layer.style.setProperty('--x6-vue-transform', transform)
-    }
+    updateLayerMatrix(graph, layer)
   }
 
   transformCallbacks.get(graph)?.forEach(update => update())
@@ -26,34 +32,38 @@ export function updateVueHtmlLayerTransform(graph: Graph) {
 
 /**
  * Track nodes whose screen geometry cannot inherit the shared transform.
- * @param {Graph} graph - Owning graph.
- * @param {HTMLElement} root - HTML node root used as the subscription key.
- * @param {Function} [update] - Callback, or undefined to remove the subscription.
+ *
+ * @param graph - Owning graph.
+ * @param root - HTML node root used as the subscription key.
+ * @param update - Callback. Omit it to remove the subscription.
  */
 export function trackVueHtmlTransform(
   graph: Graph,
   root: HTMLElement,
   update?: () => void,
 ) {
-  let callbacks = transformCallbacks.get(graph)
-
-  if (!callbacks) {
-    callbacks = new Map()
-    transformCallbacks.set(graph, callbacks)
-  }
+  const callbacks = transformCallbacks.get(graph)
 
   if (update) {
-    callbacks.set(root, update)
-  } else {
+    if (callbacks) {
+      callbacks.set(root, update)
+    } else {
+      transformCallbacks.set(graph, new Map([[root, update]]))
+    }
+  } else if (callbacks) {
     callbacks.delete(root)
+
+    if (!callbacks.size) {
+      transformCallbacks.delete(graph)
+    }
   }
 }
 
 /**
  * Create or reuse the HTML overlay layer for a graph container.
  *
- * @param {Graph} graph - Target X6 graph instance.
- * @returns {HTMLElement} The existing or newly created layer element.
+ * @param graph - Target X6 graph instance.
+ * @returns The existing or newly created layer element.
  *
  * @example
  * ```ts
@@ -67,26 +77,23 @@ export function ensureVueHtmlLayer(graph: Graph): HTMLElement {
   const { container } = graph
   const existed = layerMap.get(container)
 
-  if (existed && container.contains(existed)) {
+  if (existed?.parentElement === container) {
     return existed
   }
 
-  let layer = container.querySelector<HTMLElement>(`.${HTML_LAYER_CLASS}`)
+  const { ownerDocument } = container
+  const layer = ownerDocument.createElement('div')
 
-  if (!layer) {
-    layer = document.createElement('div')
-    layer.className = HTML_LAYER_CLASS
-    container.append(layer)
-  }
+  layer.className = HTML_LAYER_CLASS
+  container.append(layer)
+  const computedStyle = ownerDocument.defaultView?.getComputedStyle(container)
 
-  const computedStyle = globalThis.getComputedStyle(container)
-
-  if (computedStyle.position === 'static') {
+  if (computedStyle?.position === 'static') {
     container.style.position = 'relative'
   }
 
   layerMap.set(container, layer)
-  updateVueHtmlLayerTransform(graph)
+  updateLayerMatrix(graph, layer)
 
   return layer
 }
@@ -94,7 +101,7 @@ export function ensureVueHtmlLayer(graph: Graph): HTMLElement {
 /**
  * Remove the HTML overlay layer associated with a graph container.
  *
- * @param {Graph} graph - Target X6 graph instance.
+ * @param graph - Target X6 graph instance.
  *
  * @example
  * ```ts
@@ -109,24 +116,28 @@ export function removeVueHtmlLayer(graph: Graph) {
 
   layer?.remove()
   layerMap.delete(container)
-
-  // Custom-container nodes may still be alive when an empty owned layer is removed.
-  if (!transformCallbacks.get(graph)?.size) {
-    transformCallbacks.delete(graph)
-  }
 }
 
 /**
  * Release a node's transform subscription and remove an empty owned layer.
- * @param {Graph} graph - Owning graph.
- * @param {HTMLElement} root - Detached node root.
+ *
+ * @param graph - Owning graph.
+ * @param root - Detached node root.
  */
 export function releaseVueHtmlRoot(graph: Graph, root: HTMLElement) {
-  transformCallbacks.get(graph)?.delete(root)
+  trackVueHtmlTransform(graph, root)
+  removeEmptyVueHtmlLayer(graph)
+}
+
+/**
+ * Remove the graph's owned layer if it no longer contains any nodes.
+ *
+ * @param graph - Owning graph.
+ */
+export function removeEmptyVueHtmlLayer(graph: Graph) {
   const layer = layerMap.get(graph.container)
 
   if (layer && layer.childElementCount === 0) {
-    layer.remove()
-    layerMap.delete(graph.container)
+    removeVueHtmlLayer(graph)
   }
 }

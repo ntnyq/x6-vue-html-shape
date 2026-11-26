@@ -1,5 +1,5 @@
-import { Graph, ObjectExt } from '@antv/x6'
-import { isUndefined } from '@ntnyq/utils'
+import { Graph, Node, ObjectExt } from '@antv/x6'
+import { isString } from '@ntnyq/utils'
 import {
   COMPAT_SHAPE_NAME,
   DEFAULT_SHAPE_NAME,
@@ -13,11 +13,17 @@ import type {
   VueHtmlShapeProperties,
 } from './types'
 
-function getPrimerMarkup(primer?: Primer) {
+function getDefaultMarkup(primer?: Primer) {
   return [
     {
       tagName: primer || 'rect',
       selector: 'body',
+    },
+    {
+      tagName: 'text',
+      selector: 'label',
+      // X6's built-in shapes write their label text through this selector.
+      groupSelector: 'text',
     },
   ]
 }
@@ -51,7 +57,8 @@ function getPrimerAttrs(primer?: Primer) {
 /**
  * Register the base Vue HTML shape and optional compatibility alias.
  *
- * @param {RegisterVueHtmlShapeOptions} [options] - Shape registration options.
+ * @param options - Shape registration options.
+ * @throws {Error} If a shape name conflicts and overwrite is disabled.
  *
  * @example
  * ```ts
@@ -69,59 +76,108 @@ function getPrimerAttrs(primer?: Primer) {
 export function registerVueHtmlShapeNode(
   options: RegisterVueHtmlShapeOptions = {},
 ) {
-  const shape = options.shape || DEFAULT_SHAPE_NAME
-  const overwrite = options.overwrite ?? false
-
-  const register = (shapeName: string) => {
-    Graph.registerNode(
-      shapeName,
-      {
-        attrs: {
-          body: {
-            ...getPrimerAttrs(options.primer),
-            fill: 'none',
-            stroke: 'none',
-          },
+  const {
+    shape: name,
+    component,
+    compatibleShapeName,
+    overwrite = false,
+    primer,
+    markup,
+    attrs,
+    propHooks,
+    ...defaults
+  } = options
+  const shape = name || DEFAULT_SHAPE_NAME
+  const generatedMarkup =
+    markup == null && (!defaults.inherit || primer != null)
+      ? getDefaultMarkup(primer)
+      : undefined
+  const nodeMarkup = markup ?? generatedMarkup
+  const hooks =
+    typeof propHooks === 'function'
+      ? [propHooks]
+      : Object.values(propHooks ?? {})
+  const config = {
+    ...defaults,
+    ...(nodeMarkup == null ? {} : { markup: nodeMarkup }),
+    attrs: ObjectExt.merge(
+      {},
+      generatedMarkup && {
+        body: {
+          ...getPrimerAttrs(primer),
+          fill: 'none',
+          stroke: 'none',
         },
-        markup: getPrimerMarkup(options.primer),
-        propHooks(metadata) {
-          if (metadata.markup === undefined || metadata.markup === null) {
-            const primer =
-              (metadata as VueHtmlShapeProperties).primer || options.primer
-
-            metadata.markup = getPrimerMarkup(primer)
-            metadata.attrs = ObjectExt.merge(
-              {},
-              {
-                body: {
-                  ...getPrimerAttrs(primer),
-                  fill: 'none',
-                  stroke: 'none',
-                },
-              },
-              metadata.attrs || {},
-            )
-          }
-
-          return metadata
+        label: {
+          refX: '50%',
+          refY: '50%',
+          textAnchor: 'middle',
+          textVerticalAnchor: 'middle',
+          fontSize: 14,
+          fill: '#333',
+          pointerEvents: 'none',
         },
-        view: DEFAULT_VIEW_NAME,
       },
-      overwrite,
-    )
+      attrs,
+    ),
+    propHooks: [
+      ...hooks,
+      function (metadata) {
+        const { primer: nodePrimer } = metadata as VueHtmlShapeProperties
+        const label = metadata['label']
+
+        if (
+          nodePrimer &&
+          metadata.markup == null &&
+          generatedMarkup &&
+          (this.constructor as typeof Node).getMarkup() === generatedMarkup
+        ) {
+          metadata.markup = getDefaultMarkup(nodePrimer)
+          metadata.attrs = ObjectExt.merge(
+            {},
+            { body: getPrimerAttrs(nodePrimer) },
+            metadata.attrs,
+          )
+        }
+
+        if (isString(label)) {
+          metadata.attrs = ObjectExt.merge(
+            {},
+            { label: { text: label } },
+            metadata.attrs,
+          )
+        }
+
+        return metadata
+      },
+    ],
+    view: DEFAULT_VIEW_NAME,
+  } satisfies Parameters<typeof Node.define>[0]
+
+  const alias = compatibleShapeName && shape !== COMPAT_SHAPE_NAME
+  const previous = alias ? Node.registry.get(shape) : undefined
+
+  Graph.registerNode(shape, config, overwrite)
+
+  if (alias) {
+    try {
+      Graph.registerNode(COMPAT_SHAPE_NAME, config, overwrite)
+    } catch (error) {
+      if (previous) {
+        Graph.registerNode(shape, previous, true)
+      } else {
+        Graph.unregisterNode(shape)
+      }
+
+      throw error
+    }
   }
 
-  register(shape)
+  if (component) {
+    registerVueShapeComponent(shape, component)
 
-  if (options.compatibleShapeName && shape !== COMPAT_SHAPE_NAME) {
-    register(COMPAT_SHAPE_NAME)
-  }
-
-  if (options.component) {
-    registerVueShapeComponent(shape, options.component)
-
-    if (options.compatibleShapeName && shape !== COMPAT_SHAPE_NAME) {
-      registerVueShapeComponent(COMPAT_SHAPE_NAME, options.component)
+    if (alias) {
+      registerVueShapeComponent(COMPAT_SHAPE_NAME, component)
     }
   }
 }
@@ -129,7 +185,8 @@ export function registerVueHtmlShapeNode(
 /**
  * Register a single custom shape + component pair.
  *
- * @param {RegisterVueHtmlNodeOptions} options - Node registration options.
+ * @param options - Node registration options.
+ * @throws {Error} If the shape name conflicts and overwrite is disabled.
  *
  * @example
  * ```ts
@@ -144,10 +201,5 @@ export function registerVueHtmlShapeNode(
  * ```
  */
 export function registerVueHtmlNode(options: RegisterVueHtmlNodeOptions) {
-  registerVueHtmlShapeNode({
-    shape: options.shape,
-    component: options.component,
-    ...(isUndefined(options.overwrite) ? {} : { overwrite: options.overwrite }),
-    ...(isUndefined(options.primer) ? {} : { primer: options.primer }),
-  })
+  registerVueHtmlShapeNode(options)
 }

@@ -4,7 +4,9 @@ import type { Component } from 'vue'
  * Registry entry for a single shape.
  */
 export interface ShapeRegistryItem {
-  /** Vue component associated with a shape name. */
+  /**
+   * Vue component associated with a shape name.
+   */
   component?: Component
 }
 
@@ -13,8 +15,8 @@ const shapeMaps = new Map<string, ShapeRegistryItem>()
 /**
  * Register or update a Vue component for a shape.
  *
- * @param {string} shape - Shape name.
- * @param {Component} component - Vue component to bind.
+ * @param shape - Shape name.
+ * @param component - Vue component to bind.
  *
  * @example
  * ```ts
@@ -34,8 +36,8 @@ export function registerVueShapeComponent(shape: string, component: Component) {
 /**
  * Get the registered Vue component for a shape.
  *
- * @param {string} shape - Shape name.
- * @returns {Component | undefined} Registered component for the shape.
+ * @param shape - Shape name.
+ * @returns Component, or `undefined` if absent.
  *
  * @example
  * ```ts
@@ -51,7 +53,7 @@ export function getVueShapeComponent(shape: string): Component | undefined {
 /**
  * Remove a registered component by shape name.
  *
- * @param {string} shape - Shape name.
+ * @param shape - Shape name.
  *
  * @example
  * ```ts

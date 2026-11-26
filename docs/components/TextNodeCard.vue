@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { Graph, Node } from '@antv/x6'
 import { computed } from 'vue'
-import { useNodeData } from './useNodeData'
+import { useX6NodeData } from 'x6-vue-html-shape'
 
 interface TextNodeData {
   title: string
@@ -8,14 +9,8 @@ interface TextNodeData {
   tone: 'teal' | 'orange' | 'sky'
 }
 
-interface X6NodeLike {
-  getData: <T = unknown>() => T
-  on: (event: string, handler: () => void) => void
-  off: (event: string, handler: () => void) => void
-}
-
-const props = defineProps<{ node: X6NodeLike; graph: unknown }>()
-const data = useNodeData<TextNodeData>(props.node)
+const props = defineProps<{ node: Node; graph: Graph }>()
+const data = useX6NodeData<TextNodeData | undefined>(props.node)
 
 const toneClass = computed(() => {
   switch (data.value?.tone) {
@@ -38,10 +33,10 @@ const toneClass = computed(() => {
     :class="toneClass"
   >
     <div class="text-sm font-semibold tracking-wide text-stone-700">
-      {{ data.title }}
+      {{ data?.title }}
     </div>
     <p class="overflow-hidden text-xs leading-5 text-stone-500">
-      {{ data.description }}
+      {{ data?.description }}
     </p>
   </div>
 </template>

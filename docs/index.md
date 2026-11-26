@@ -17,7 +17,7 @@ hero:
       link: /guide/comparison
     - theme: alt
       text: GitHub
-      link: https://github.com/ntnyq/x6-extension-vue-shape
+      link: https://github.com/ntnyq/x6-vue-html-shape
 
 features:
   - title: HTML Overlay Rendering

@@ -81,10 +81,7 @@ describe('sync', () => {
     dispose()
   })
 
-  it.each([
-    ['cell:removed', 'node:change:position'],
-    ['node:change:position', 'cell:removed'],
-  ])('preserves full refresh across %s then %s', (firstEvent, secondEvent) => {
+  it('updates existing views at setup and only changed nodes afterward', () => {
     vi.useFakeTimers()
     const graph = new MockGraph()
     const first = { id: 'a' }
@@ -93,10 +90,12 @@ describe('sync', () => {
     graph.setNodes([first, second])
     const dispose = setupVueHtmlShapeSync(graph as never)
 
-    graph.emit(firstEvent, { node: first })
-    graph.emit(secondEvent, { node: first })
-    vi.advanceTimersToNextFrame()
     expect(graph.findViewByCell.mock.calls).toStrictEqual([[first], [second]])
+    graph.findViewByCell.mockClear()
+    graph.emit('cell:removed', { cell: second })
+    graph.emit('node:change:zIndex', { node: first })
+    vi.advanceTimersToNextFrame()
+    expect(graph.findViewByCell.mock.calls).toStrictEqual([[first]])
     dispose()
   })
 
@@ -106,15 +105,22 @@ describe('sync', () => {
     const node = { id: 'a' }
 
     graph.setNodes([node])
+    const off = vi.spyOn(graph, 'off')
     const dispose = setupVueHtmlShapeSync(graph as never)
 
+    graph.findViewByCell.mockClear()
+    graph.emit('node:selected', { node })
     graph.emit('node:change:position', { node })
     graph.emit('scale')
     dispose()
     graph.emit('node:change:position', { node })
+    graph.emit('node:selected', { node })
+    graph.emit('node:unselected', { node })
     graph.emit('scale')
     vi.advanceTimersToNextFrame()
     expect(graph.findViewByCell).not.toHaveBeenCalled()
+    expect(off).toHaveBeenCalledWith('node:selected', expect.any(Function))
+    expect(off).toHaveBeenCalledWith('node:unselected', expect.any(Function))
   })
 
   it('shares the matrix on scale without traversing nodes', () => {
@@ -127,6 +133,7 @@ describe('sync', () => {
       useAnimationFrame: false,
     })
 
+    graph.findViewByCell.mockClear()
     graph.emit('scale')
 
     expect(graph.findViewByCell).not.toHaveBeenCalled()

@@ -11,9 +11,9 @@
     "vue",
     "x6"
   ],
-  "homepage": "https://github.com/ntnyq/x6-extension-vue-shape#readme",
+  "homepage": "https://github.com/ntnyq/x6-vue-html-shape#readme",
   "bugs": {
-    "url": "https://github.com/ntnyq/x6-extension-vue-shape/issues"
+    "url": "https://github.com/ntnyq/x6-vue-html-shape/issues"
   },
   "license": "MIT",
   "author": {
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ntnyq/x6-extension-vue-shape.git"
+    "url": "https://github.com/ntnyq/x6-vue-html-shape.git"
   },
   "files": [
     "dist",
@@ -61,7 +61,10 @@
     "release:version": "bumpp",
     "test": "vitest",
     "test:browser": "vitest run --config vitest.browser.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "tslib": "^2.9.1"
   },
   "devDependencies": {
     "@antv/x6": "^3.1.8",
@@ -81,13 +84,13 @@
     "playwright": "1.65.1",
     "tsdown": "^0.23.7",
     "tsnapi": "^1.6.1",
-    "typescript": "7.1.0-beta",
+    "typescript": "~6.0.3",
     "vitest": "^5.1.1",
     "vue": "^3.5.46",
     "vue-tsc": "^3.3.14"
   },
   "peerDependencies": {
-    "@antv/x6": "^3.0.0",
+    "@antv/x6": "^3.0.1",
     "vue": "^3.3.0"
   },
   "nano-staged": {

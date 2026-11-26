@@ -14,3 +14,5 @@ lib-cov
 **/.vitepress/cache
 
 **/.pnpm-store/**
+
+.vitest/

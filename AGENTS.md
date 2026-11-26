@@ -18,7 +18,7 @@ Use Node.js LTS and the pnpm version pinned in `package.json`. Run commands from
 - `pnpm build`: generate JavaScript, declarations, and API snapshots with tsdown.
 - `pnpm docs:dev` / `pnpm docs:build`: serve or build documentation.
 - `pnpm test`: run Vitest once; `pnpm test tests/sync.test.ts` targets synchronization tests.
-- `pnpm typecheck`: check TypeScript with `tsgo --noEmit`.
+- `pnpm typecheck`: check TypeScript and Vue templates with `vue-tsc --noEmit`.
 - `pnpm lint`: run Oxlint.
 - `pnpm format` / `pnpm format:check`: apply or check Oxfmt formatting.
 - `pnpm release:check`: run formatting, lint, type, and test checks before submitting changes. Also run `pnpm build` for library changes.
@@ -33,7 +33,7 @@ Use Vitest with jsdom; name files `tests/*.test.ts` and describe behavior with `
 
 ## Commit & Pull Request Guidelines
 
-History currently contains only `chore: init commit`. Follow its `type: description` format, using appropriate prefixes such as `fix:`, `feat:`, or `docs:`. PRs should explain the change, link relevant issues, and report validation. Include screenshots for visible demo changes and update documentation for API changes.
+Follow the existing `type: description` commit format, using appropriate prefixes such as `fix:`, `feat:`, or `docs:`. PRs should explain the change, link relevant issues, and report validation. Include screenshots for visible demo changes and update documentation for API changes.
 
 ## Architecture Guardrails
 

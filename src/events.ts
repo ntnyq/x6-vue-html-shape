@@ -1,10 +1,11 @@
-const STOP_SELECTOR = 'input, textarea, select, button, a, [data-x6-vue-stop]'
+const STOP_SELECTOR =
+  'input, textarea, select, button, a, label, summary, [data-x6-vue-stop]'
 
 /**
  * Decide whether graph drag/selection mouse down should be blocked.
  *
- * @param {EventTarget | null} target - Mouse down event target.
- * @returns {boolean} `true` when graph mouse handling should be stopped.
+ * @param target - Mouse down event target.
+ * @returns `true` when graph mouse handling should be stopped.
  *
  * @example
  * ```ts
@@ -17,16 +18,18 @@ const STOP_SELECTOR = 'input, textarea, select, button, a, [data-x6-vue-stop]'
  * ```
  */
 export function shouldStopGraphMouseDown(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) {
+  if (!target || !('nodeType' in target) || target.nodeType !== 1) {
     return false
   }
 
-  if (target.closest(STOP_SELECTOR)) {
+  const targetElement = target as Element
+
+  if (targetElement.closest(STOP_SELECTOR)) {
     return true
   }
 
   for (
-    let element: Element | null = target;
+    let element: Element | null = targetElement;
     element;
     element = element.parentElement
   ) {

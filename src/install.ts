@@ -1,4 +1,3 @@
-import { isUndefined } from '@ntnyq/utils'
 import type { App, Plugin } from 'vue'
 import { registerVueHtmlShapeNode } from './node'
 import type { VueHtmlShapePluginOptions } from './types'
@@ -7,8 +6,9 @@ import { injectStyle } from './utils/dom'
 /**
  * Install the Vue HTML shape plugin into a Vue app.
  *
- * @param {App} app - Vue application instance.
- * @param {VueHtmlShapePluginOptions} [options] - Plugin configuration options.
+ * @param app - Vue application instance.
+ * @param options - Plugin configuration options.
+ * @throws {Error} If a shape name conflicts and overwrite is disabled.
  *
  * @example
  * ```ts
@@ -20,26 +20,20 @@ import { injectStyle } from './utils/dom'
  * ```
  */
 export function install(app: App, options: VueHtmlShapePluginOptions = {}) {
-  if (options.injectStyle !== false) {
+  const { injectStyle: shouldInjectStyle = true, ...registration } = options
+
+  if (shouldInjectStyle) {
     injectStyle()
   }
 
-  registerVueHtmlShapeNode({
-    ...(isUndefined(options.shape) ? {} : { shape: options.shape }),
-    ...(isUndefined(options.compatibleShapeName)
-      ? {}
-      : { compatibleShapeName: options.compatibleShapeName }),
-    ...(isUndefined(options.overwrite) ? {} : { overwrite: options.overwrite }),
-    ...(isUndefined(options.primer) ? {} : { primer: options.primer }),
-    ...(isUndefined(options.component) ? {} : { component: options.component }),
-  })
+  registerVueHtmlShapeNode(registration)
 }
 
 /**
  * Create a Vue plugin object with preconfigured options.
  *
- * @param {VueHtmlShapePluginOptions} [options] - Plugin configuration options.
- * @returns {Plugin} Vue plugin object that installs shape registration.
+ * @param options - Plugin configuration options.
+ * @returns Vue plugin object that installs shape registration.
  *
  * @example
  * ```ts
@@ -54,6 +48,12 @@ export function createVueHtmlShapePlugin(
   options: VueHtmlShapePluginOptions = {},
 ): Plugin {
   return {
+    /**
+     * Install the shape plugin with the captured options.
+     *
+     * @param app - Vue application instance.
+     * @throws {Error} If a shape name conflicts and overwrite is disabled.
+     */
     install(app: App) {
       install(app, options)
     },

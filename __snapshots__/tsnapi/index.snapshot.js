@@ -18,10 +18,12 @@ export class VueHtmlShapeView extends NodeView {
   renderVueComponent() {}
   updateHtmlAttributes() {}
   updateHtmlPosition() {}
+  updateHtmlCursor() {}
   updateHtmlVisible() {}
   unmountVueComponent() {}
   removeHtmlRoot() {}
   onMouseDown(_, _, _) {}
+  onMouseEnter(_) {}
   unmount() {}
 }
 // #endregion

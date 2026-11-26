@@ -2,10 +2,8 @@
 
 Render Vue components as X6 nodes without SVG `foreignObject`.
 
-Targets **Vue `^3.3.0` and X6 `^3.0.0`**. The current development version is
-`0.0.0`; npm did not expose a `latest` release under this name when checked on
-2026-09-14. The implementation is ready for controlled evaluation within its
-documented limits, not a claim of full official-package parity.
+Targets **Vue `^3.3.0` and X6 `^3.0.1`**. The current version is `0.0.0` and
+available for evaluation through the local workspace.
 
 ## Why
 
@@ -43,7 +41,7 @@ Comparison baseline: **`@antv/x6-vue-shape@3.0.2`**, checked on 2026-09-14.
 | Vue versions            | Vue 3.3+ within Vue 3                                      | Declares Vue 2 and Vue 3 support                                  |
 | Vue context             | Optional graph-specific Teleport host                      | Optional shared `getTeleport()` host                              |
 | Graph transforms        | Shared CSS matrix; explicit sync setup                     | SVG transform inheritance                                         |
-| Registration shortcut   | Narrow options; duplicates rejected by default             | Forwards node defaults; overwrites                                |
+| Registration shortcut   | Forwards X6 node defaults; duplicates rejected by default  | Forwards node defaults; overwrites                                |
 | Content scale           | Supports `scaleContent: false`                             | No matching option in the inspected renderer                      |
 | Export and mixed layers | HTML omitted from SVG export; cross-layer ordering limited | Content remains in the SVG scene, subject to export compatibility |
 | Performance             | No comparative benchmark or node-count guarantee           | No measured ranking established by this review                    |
@@ -64,6 +62,8 @@ import UserNode from './UserNode.vue'
 registerVueHtmlNode({
   shape: 'user-node',
   component: UserNode,
+  width: 220,
+  height: 80,
 })
 
 const graph = new Graph({
@@ -76,8 +76,6 @@ graph.addNode({
   shape: 'user-node',
   x: 100,
   y: 100,
-  width: 220,
-  height: 80,
   data: { name: 'x6' },
 })
 
@@ -120,11 +118,10 @@ pnpm exec playwright install chromium firefox webkit
 pnpm test:browser
 ```
 
-The current baseline has **45 unit tests** and **six browser scenarios executed
-in Chromium, Firefox and WebKit (18 executions)**. They cover geometry, real mouse
-dragging, input focus, context, special containers and disposal. The 100-node
-style-update check is not an FPS benchmark or a supported node-count limit. See
-[production readiness](docs/guide/production-readiness.md) for supported behavior,
+Unit and browser tests cover geometry, selection stacking, SVG labels, cursor
+updates, dragging, input focus, context and disposal. Browser scenarios run in
+Chromium, Firefox and WebKit. See
+[production readiness](docs/guide/production-readiness.md) for test evidence,
 remaining release criteria and architectural limitations.
 
 ## Compatibility mode (`vue-shape`)

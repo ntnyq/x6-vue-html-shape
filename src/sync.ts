@@ -1,5 +1,5 @@
 import type { Graph, Node } from '@antv/x6'
-import { removeVueHtmlLayer, updateVueHtmlLayerTransform } from './layer'
+import { removeEmptyVueHtmlLayer, updateVueHtmlLayerTransform } from './layer'
 
 const syncDisposers = new WeakMap<Graph, () => void>()
 const SYNC_PLUGIN_NAME = 'vue-html-shape-sync'
@@ -8,24 +8,34 @@ const SYNC_PLUGIN_NAME = 'vue-html-shape-sync'
  * Runtime sync behavior options.
  */
 export interface SyncOptions {
-  /** Reserved option for throttling updates in future compatibility. */
+  /**
+   * Reserved option for throttling updates.
+   */
   throttle?: number
-  /** Whether updates should be wrapped in `requestAnimationFrame`. */
+  /**
+   * Whether to batch node updates with `requestAnimationFrame`.
+   *
+   * @default true
+   */
   useAnimationFrame?: boolean
 }
 
 interface NodeEventPayload {
+  /**
+   * X6 node affected by the graph event.
+   */
   node: Node
 }
 
 /**
  * Bind graph events and keep Vue HTML nodes synchronized.
  *
- * Returns a dispose function to remove listeners.
+ * Repeated calls reuse the graph's active subscription. Graph disposal stops
+ * synchronization automatically.
  *
- * @param {Graph} graph - Target X6 graph instance.
- * @param {SyncOptions} [options] - Sync behavior options.
- * @returns {() => void} Function that removes all listeners and cancels pending frame.
+ * @param graph - Target X6 graph instance.
+ * @param options - Sync behavior options.
+ * @returns Stops synchronization and cancels any pending frame.
  *
  * @example
  * ```ts
@@ -48,7 +58,6 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
 
   let disposed = false
   let raf: number | null = null
-  let shouldUpdateAll = false
   const pendingNodes = new Set<Node>()
 
   const updateNode = (node: Node) => {
@@ -63,9 +72,8 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
 
   const flush = () => {
     raf = null
-    const nodes = shouldUpdateAll ? graph.getNodes() : [...pendingNodes]
+    const nodes = [...pendingNodes]
 
-    shouldUpdateAll = false
     pendingNodes.clear()
 
     for (const node of nodes) {
@@ -89,17 +97,8 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     }
   }
 
-  const updateAll = () => {
-    shouldUpdateAll = true
-    pendingNodes.clear()
-    schedule()
-  }
-
   const updateOne = ({ node }: NodeEventPayload) => {
-    if (!shouldUpdateAll) {
-      pendingNodes.add(node)
-    }
-
+    pendingNodes.add(node)
     schedule()
   }
 
@@ -118,8 +117,9 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
   graph.on('node:change:position', updateOne)
   graph.on('node:change:size', updateOne)
   graph.on('node:change:visible', updateOne)
-  graph.on('node:change:zIndex', updateAll)
-  graph.on('cell:removed', updateAll)
+  graph.on('node:change:zIndex', updateOne)
+  graph.on('node:selected', updateOne)
+  graph.on('node:unselected', updateOne)
 
   // Direct matrix changes and graph rotation do not emit scale/translate events.
   const viewport = graph.view?.viewport
@@ -133,6 +133,8 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
   }
 
   updateTransform()
+  // Selection may have changed before setup or while synchronization was stopped.
+  graph.getNodes().forEach(updateNode)
 
   const dispose = () => {
     if (disposed) {
@@ -148,7 +150,6 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     }
 
     pendingNodes.clear()
-    shouldUpdateAll = false
     graph.off('scale', updateTransform)
     graph.off('translate', updateTransform)
     graph.off('resize', updateTransform)
@@ -157,8 +158,9 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     graph.off('node:change:position', updateOne)
     graph.off('node:change:size', updateOne)
     graph.off('node:change:visible', updateOne)
-    graph.off('node:change:zIndex', updateAll)
-    graph.off('cell:removed', updateAll)
+    graph.off('node:change:zIndex', updateOne)
+    graph.off('node:selected', updateOne)
+    graph.off('node:unselected', updateOne)
     syncDisposers.delete(graph)
   }
 
@@ -171,11 +173,7 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     dispose() {
       dispose()
       // Graph disposal has already removed the node views at this point.
-      const layer = graph.container.querySelector('.x6-vue-html-layer')
-
-      if (layer?.childElementCount === 0) {
-        removeVueHtmlLayer(graph)
-      }
+      removeEmptyVueHtmlLayer(graph)
     },
   })
   const stop = () => {

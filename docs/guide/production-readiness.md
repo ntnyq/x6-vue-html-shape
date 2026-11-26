@@ -7,15 +7,10 @@ every official Vue shape feature.
 
 ## Current baseline
 
-Reviewed on **2026-09-14** against the local `0.0.0` development version. Peer
-ranges are Vue `^3.3.0` and X6 `^3.0.0`; local validation uses Vue 3.5.42 and
-X6 3.1.8. This is a controlled-evaluation baseline, not a declaration of stable
-API compatibility or feature parity with `@antv/x6-vue-shape@3.0.2`.
-
-The registry did not expose a `latest` release for `x6-vue-html-shape` on the review
-date. Follow [Getting Started](./getting-started.md) for local evaluation. The
-[detailed comparison](./comparison.md) distinguishes implementation differences
-from missing verification.
+The `0.0.0` development version declares peer ranges Vue `^3.3.0` and X6
+`^3.0.1`. Repository tests use Vue 3.5.46 and X6 3.1.8. The packed package
+also passed the browser suite in a clean consumer with Vue 3.3.0 and X6 3.0.1.
+Follow [Getting Started](./getting-started.md) for local evaluation.
 
 ## Implemented behavior
 
@@ -24,6 +19,9 @@ from missing verification.
   handles direct `graph.matrix(...)` and `graph.rotate(...)` calls after its
   mutation callback runs; those operations do not emit scale/translate events.
 - Node rotation uses the node center, matching X6 SVG geometry.
+- Shape registration forwards X6 defaults. Generated SVG markup includes a
+  centered text label. The HTML wrapper mirrors the SVG view cursor and rises
+  above unselected wrappers in its layer when the X6 Selection plugin selects it.
 - Normal nodes share one CSS matrix update on pan/zoom. The browser still needs
   to compute styles and paint; this is not an O(1) rendering-time guarantee.
 - Nodes with `scaleContent: false` preserve the transformed box while laying out
@@ -43,13 +41,12 @@ from missing verification.
 
 ## Browser verification
 
-The checked baseline has **45 tests in eight unit-test files** and **six browser
-scenarios run across Chromium, Firefox and WebKit (18 executions)**. The browser
-count represents the same six scenarios in three engines, not 18 distinct flows.
+The browser scenarios run across Chromium, Firefox and WebKit.
 
 | Evidence      | Covered behavior                                                                              | Test location                                                                             |
 | ------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Real browsers | Native mouse dragging and `node:moved` delegation                                             | `tests/browser/graph.test.ts`                                                             |
+| Real browsers | SVG label positioning, cursor changes and selection stacking                                  | `tests/browser/graph.test.ts`                                                             |
 | Real browsers | SVG/HTML bounds under position, size, rotation, nonuniform scale and direct affine matrices   | `tests/browser/graph.test.ts`                                                             |
 | Real browsers | Unscaled content, custom targets, synchronization restart and return to a newly created layer | `tests/browser/graph.test.ts`                                                             |
 | Real browsers | Pan/zoom of 100 ordinary nodes without individual style mutations                             | `tests/browser/graph.test.ts`                                                             |

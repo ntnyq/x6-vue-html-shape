@@ -10,6 +10,9 @@ export default defineConfig({
       '@antv/x6': fileURLToPath(
         new URL('node_modules/@antv/x6/es/index.js', import.meta.url),
       ),
+      'x6-vue-html-shape': fileURLToPath(
+        new URL('src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

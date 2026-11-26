@@ -5,9 +5,12 @@ import { onBeforeUnmount, shallowRef } from 'vue'
 /**
  * Create a reactive ref bound to X6 node data changes.
  *
- * @template T
- * @param {Node} node - X6 node instance whose `data` changes should be tracked.
- * @returns {ShallowRef<T>} A shallow ref that stays in sync with `node.getData()`.
+ * Call this during component setup. The listener is removed before unmount.
+ *
+ * @template T - Type of the node data.
+ * @param node - X6 node instance whose `data` changes should be tracked.
+ * @returns Shallow ref that tracks `node.getData()`.
+ *
  * @example
  * ```ts
  * import { useX6NodeData } from 'x6-vue-html-shape'

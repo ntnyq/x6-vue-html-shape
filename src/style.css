@@ -14,6 +14,7 @@
   box-sizing: border-box;
   transform-origin: 0 0;
   pointer-events: auto;
+  cursor: var(--x6-vue-cursor, auto);
   contain: layout style;
 }
 

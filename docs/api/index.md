@@ -1,7 +1,7 @@
 # Complete API
 
 This page describes the current `x6-vue-html-shape` package entry. Supported peers
-are Vue `^3.3.0` and X6 `^3.0.0`. The package exposes ESM and TypeScript declarations.
+are Vue `^3.3.0` and X6 `^3.0.1`. The package exposes ESM and TypeScript declarations.
 
 Public import paths are `x6-vue-html-shape`, `x6-vue-html-shape/style.css` and
 `x6-vue-html-shape/package.json`. Helpers under source `utils/` and internal
@@ -42,22 +42,28 @@ Registers a base shape with the HTML view. Returns `void`.
 | `shape?: string`                    | `'vue-html-shape'` | Name in the X6 node registry                                  |
 | `compatibleShapeName?: boolean`     | `false`            | Also register the `'vue-shape'` alias                         |
 | `overwrite?: boolean`               | `false`            | Permit replacing an existing X6 shape                         |
-| `primer?: Primer`                   | `'rect'`           | SVG body tag                                                  |
+| `primer?: Primer`                   | `'rect'`           | SVG body tag for generated markup                             |
 | `component?: Component`             | Unset              | Component binding for the registered shape and optional alias |
 
-The default SVG body is transparent. `circle` and `ellipse` receive relative
-geometry attributes. Other tags can require explicit geometry: for example `d`
-for paths and points for polygons/polylines. The Vue content itself remains HTML.
+Both registration functions forward X6 node configuration such as dimensions,
+`data`, `ports`, `attrs`, `markup`, `propHooks` and `inherit`. The package assigns
+the Vue HTML view. Custom markup takes precedence over the generated SVG body
+and label. With `inherit`, the parent supplies markup unless the registration
+also supplies `markup` or `primer`.
+
+Generated markup contains a transparent SVG body and centered SVG text. Set
+`label` when registering the shape or adding a node. Use `attrs.label` to style
+the text and `node.setAttrByPath('label/text', value)` to change it at runtime.
+The label is in the SVG layer below the Vue content, so opaque HTML can cover it.
+`circle` and `ellipse` primers receive relative geometry attributes. Paths need
+`d`, and polygons and polylines need points.
 
 ### `registerVueHtmlNode(options)`
 
 Registers one shape/component pair. Returns `void`.
 
-`RegisterVueHtmlNodeOptions` requires `shape: string` and `component: Component`;
-it accepts optional `primer` and `overwrite` with the same defaults as above.
-It does not accept arbitrary X6 defaults such as width, ports or `inherit`. Use
-`Graph.registerNode` plus a component binding for that
-([migration example](../guide/migration.md#preserve-inherited-node-defaults)).
+`RegisterVueHtmlNodeOptions` requires `shape: string` and `component: Component`.
+It accepts the same X6 defaults as `registerVueHtmlShapeNode()`.
 
 Importing the package registers `VueHtmlShapeView` under `DEFAULT_VIEW_NAME`, but
 base/custom node shapes still require registration. Shape names and component
@@ -118,8 +124,10 @@ changing options. X6's plugin lifecycle also invokes cleanup on `graph.dispose()
   geometry updates on graph transforms.
 - Direct viewport matrix changes, including `graph.matrix(...)` and graph rotation,
   are observed through `MutationObserver`; they update when its callback runs.
-- Node events are merged per animation frame by default. Z-index changes and cell
-  removals can still schedule a full node refresh.
+- Setup refreshes existing node overlays. Subsequent node events update only the
+  affected nodes and are merged per animation frame by default.
+- With X6's Selection plugin, selected nodes rise above unselected nodes in the
+  same HTML layer. Deselecting restores the current model z-index.
 - X6 view actions also update local geometry and presentation. The RAF option
   governs the synchronizer's queue, not every update performed by X6 or Vue.
 
@@ -168,9 +176,11 @@ The view responds to component/data/props and presentation changes; changing
 `primer` at runtime is not a dedicated HTML-view action. Configure SVG markup/attrs
 through X6 rather than assuming every creation option is a live renderer switch.
 
-Node layout owns wrapper width, height, transform, transform origin and z-index.
-Do not use caller styles to override these or the internal `--x6-vue-transform`
-variable. For visual customization, prefer styling the component's own root.
+The view owns wrapper width, height, transform, transform origin, z-index and the
+internal `--x6-vue-transform` and `--x6-vue-cursor` variables. Style the component's
+own root for visual customization.
+The HTML wrapper mirrors the SVG view container's computed cursor. Set
+`htmlStyle.cursor` to override it for the HTML wrapper.
 The library does not automatically resize the node model from intrinsic HTML size.
 
 Custom containers must share the graph container's coordinate origin and positioning
@@ -194,7 +204,7 @@ Vue effect scope alone does not provide this helper's component-unmount cleanup.
 ### `shouldStopGraphMouseDown(target): boolean`
 
 Accepts `EventTarget | null`. It protects inputs, textareas, selects, buttons,
-links, editable content and descendants of `[data-x6-vue-stop]`. Editable ancestor
+links, labels, summaries, editable content and descendants of `[data-x6-vue-stop]`. Editable ancestor
 lookup honors `contenteditable="false"` boundaries. The HTML wrapper uses this
 predicate to stop `mousedown` and `touchstart` propagation before graph handlers
 can interfere with native controls.

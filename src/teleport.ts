@@ -12,6 +12,9 @@ import type { App, Component, PropType } from 'vue'
 import type { MountVueOptions } from './utils/vue'
 
 interface TeleportHost {
+  /**
+   * Mounted node content keyed by its Teleport entry identifier.
+   */
   entries: Map<symbol, MountVueOptions>
 }
 
@@ -40,8 +43,11 @@ const NodeContent = defineComponent({
 /**
  * Create a host for one graph. Mount it inside the application's provider tree
  * before adding nodes, and keep it mounted for the graph's lifetime.
- * @param {Graph} graph - Graph whose nodes this host renders.
- * @returns {Component} Component to mount inside the application's provider tree.
+ *
+ * Mounting a second host for the same graph throws an error.
+ *
+ * @param graph - Graph whose nodes this host renders.
+ * @returns Host component to mount in the Vue application.
  */
 export function createVueHtmlTeleport(graph: Graph): Component {
   return defineComponent({
@@ -85,8 +91,10 @@ export function createVueHtmlTeleport(graph: Graph): Component {
 
 /**
  * Connect a node to its graph's host when one is mounted.
- * @param {MountVueOptions} options - Component, container and node context.
- * @returns {object | undefined} Unmount handle when a host exists.
+ *
+ * @param options - Component, container and node context.
+ * @returns Handle for removing the Teleport entry, or `undefined` if the
+ * graph has no mounted host.
  */
 export function mountTeleportComponent(
   options: MountVueOptions,

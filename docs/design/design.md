@@ -2,7 +2,7 @@
 
 > 本文保留最初的设计提案。当前实现已增加按 Graph 隔离的 Teleport、完整矩阵同步及浏览器回归测试；实现状态与生产验收边界以 [Production readiness](../guide/production-readiness.md) 为准。HTML overlay 与 Teleport 分别解决 DOM 位置和 Vue 上下文继承，可以配合使用。
 
-## 当前状态索引（2026-09-14）
+## 设计提案归档索引（2026-09-14）
 
 - 包名：`x6-vue-html-shape`；开发版本：`0.0.0`；支持 Vue `^3.3.0` / X6 `^3.0.0`。
 - 已实现：独立 HTML overlay、完整矩阵和节点旋转同步、Graph 级 Teleport、动态属性、组件复用、交互保护与自动销毁。

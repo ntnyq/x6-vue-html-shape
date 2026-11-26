@@ -1,13 +1,13 @@
 # Getting Started
 
 `x6-vue-html-shape` renders Vue 3 components in an HTML overlay while X6 owns
-nodes, edges and graph interaction. It supports Vue `^3.3.0` and X6 `^3.0.0`;
-there is no Vue 2 or X6 2 compatibility declaration.
+nodes, edges and graph interaction. It supports Vue `^3.3.0` and X6 `^3.0.1`.
+Use X6 3.0.1 or later because the 3.0.0 npm tarball lacks its package entry points.
 
 ## Current availability
 
-The current checkout is version `0.0.0`. On 2026-09-14, npm returned no `latest`
-release for this package name. Start with the local workspace:
+The current checkout is a `0.0.0` development version. Start with the local
+workspace.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -43,9 +43,10 @@ registerVueHtmlNode({
 ```
 
 Duplicate shape names are rejected by default. Use `overwrite: true` when
-intentionally replacing a registration. The shortcut accepts `shape`, `component`,
-`primer` and `overwrite`; put node dimensions and other X6 metadata on the node,
-or use the [inherited-defaults migration pattern](./migration.md#preserve-inherited-node-defaults).
+intentionally replacing a registration. The shortcut also accepts X6 node
+defaults such as `width`, `height`, `attrs` and `ports`. For custom SVG markup
+and inherited defaults, see the
+[migration pattern](./migration.md#preserve-inherited-node-defaults).
 
 ## Create the graph and enable synchronization
 
