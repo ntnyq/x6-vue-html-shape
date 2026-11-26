@@ -1,5 +1,4 @@
 // Deliberately partial module doubles isolate graph lifecycle from SVG layout.
-/* oxlint-disable vitest/prefer-import-in-mock */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, shallowRef } from 'vue'
 import type { App } from 'vue'
@@ -40,16 +39,21 @@ let app: App | null = null
 
 function mountPlayground() {
   const host = document.createElement('div')
+
   document.body.append(host)
   let state: ReturnType<typeof usePlaygroundGraph> | null = null
+
   app = createApp({
     setup() {
       const container = shallowRef<HTMLDivElement | null>(null)
+
       state = usePlaygroundGraph(container, 'text-node')
+
       return () => h('div', { class: 'viewport' }, h('div', { ref: container }))
     },
   })
   app.mount(host)
+
   return { host, getStatus: () => state?.status.value }
 }
 
@@ -77,8 +81,10 @@ afterEach(() => {
 describe('playground lifecycle', () => {
   it('resizes from the fluid viewport', async () => {
     const { host, getStatus } = mountPlayground()
+
     await vi.waitFor(() => expect(getStatus()).toBe('ready'))
     const viewport = host.querySelector('.viewport')!
+
     expect(mocks.observe).toHaveBeenCalledWith(viewport)
     Object.defineProperties(viewport, {
       clientWidth: { value: 390 },
@@ -91,6 +97,7 @@ describe('playground lifecycle', () => {
 
   it('disconnects observers and disposes graph synchronization on unmount', async () => {
     const { getStatus } = mountPlayground()
+
     await vi.waitFor(() => expect(getStatus()).toBe('ready'))
 
     app?.unmount()

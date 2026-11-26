@@ -1,6 +1,6 @@
 # `x6-vue-html-shape` 生成与实现计划
 
-> 本文保留最初的设计提案。当前实现已增加按 Graph 隔离的 Teleport、完整矩阵同步及浏览器回归测试；实现状态与生产验收边界以 [Production readiness](docs/guide/production-readiness.md) 为准。HTML overlay 与 Teleport 分别解决 DOM 位置和 Vue 上下文继承，可以配合使用。
+> 本文保留最初的设计提案。当前实现已增加按 Graph 隔离的 Teleport、完整矩阵同步及浏览器回归测试；实现状态与生产验收边界以 [Production readiness](../guide/production-readiness.md) 为准。HTML overlay 与 Teleport 分别解决 DOM 位置和 Vue 上下文继承，可以配合使用。
 
 ## 当前状态索引（2026-09-14）
 
@@ -8,7 +8,7 @@
 - 已实现：独立 HTML overlay、完整矩阵和节点旋转同步、Graph 级 Teleport、动态属性、组件复用、交互保护与自动销毁。
 - 已验证：45 项单元测试；6 个浏览器场景分别在 Chromium / Firefox / WebKit 执行，共 18 次。
 - 尚未完成：HTML 导出合成、跨 SVG/HTML 任意层级交错、完整插件兼容矩阵、Safari/iOS 真机验收与官方对照性能基准。
-- 当前 API、使用方式、默认值和限制以 [API 文档](docs/api/index.md)、[官方能力对比](docs/guide/comparison.md)、[迁移指南](docs/guide/migration.md) 为准。
+- 当前 API、使用方式、默认值和限制以 [API 文档](../api/index.md)、[官方能力对比](../guide/comparison.md)、[迁移指南](../guide/migration.md) 为准。
 
 下文的代码、能力对齐表和步骤属于历史方案，不是当前实现的完整规格。例如 Vue 2 / `vue-demi` 支持、无需 Teleport 的建议和全量位置同步方案都不能作为当前能力声明。
 
@@ -237,7 +237,12 @@ import type { Graph, Node, NodeProperties } from '@antv/x6'
 import type { App, Component, Plugin } from 'vue'
 
 export type Primer =
-  'rect' | 'circle' | 'path' | 'ellipse' | 'polygon' | 'polyline'
+  | 'rect'
+  | 'circle'
+  | 'path'
+  | 'ellipse'
+  | 'polygon'
+  | 'polyline'
 
 export interface VueShapeContext<N extends Node = Node> {
   node: N
@@ -529,12 +534,12 @@ import 'x6-vue-html-shape/style.css'
 ```ts
 import { Graph, ObjectExt } from '@antv/x6'
 import type { NodeProperties } from '@antv/x6'
-import type { Primer, VueHtmlShapeProperties } from './types'
 import {
   DEFAULT_SHAPE_NAME,
   DEFAULT_VIEW_NAME,
   COMPAT_SHAPE_NAME,
 } from './constants'
+import type { Primer, VueHtmlShapeProperties } from './types'
 
 function getPrimerMarkup(primer?: Primer) {
   if (!primer) {
@@ -646,8 +651,8 @@ export function registerVueHtmlShapeNode(options: RegisterNodeOptions = {}) {
 文件：`src/utils/vue.ts`
 
 ```ts
-import { createApp, h, type App, type Component } from 'vue'
 import type { Graph, Node } from '@antv/x6'
+import { createApp, h, type App, type Component } from 'vue'
 
 export interface MountVueOptions {
   component: Component
@@ -706,15 +711,15 @@ x6-vue-html-shape-demi   // Vue 2 / Vue 3
 import { Dom, NodeView } from '@antv/x6'
 import type { Graph, Node } from '@antv/x6'
 import type { App, Component } from 'vue'
-import { ensureVueHtmlLayer } from './layer'
-import { getVueShapeComponent } from './registry'
-import { mountVueComponent } from './utils/vue'
 import {
   DEFAULT_VIEW_NAME,
   HTML_NODE_CLASS,
   HTML_NODE_CONTENT_CLASS,
 } from './constants'
+import { ensureVueHtmlLayer } from './layer'
+import { getVueShapeComponent } from './registry'
 import type { VueHtmlShapeProperties } from './types'
+import { mountVueComponent } from './utils/vue'
 
 export class VueHtmlShapeView extends NodeView {
   static action = 'vue-html' as any
@@ -1077,8 +1082,8 @@ layer.addEventListener('mousedown', event => {
 
 ```ts
 import type { App } from 'vue'
-import type { VueHtmlShapePluginOptions } from './types'
 import { registerVueHtmlShapeNode } from './node'
+import type { VueHtmlShapePluginOptions } from './types'
 import { injectStyle } from './utils/dom'
 
 export function install(app: App, options: VueHtmlShapePluginOptions = {}) {

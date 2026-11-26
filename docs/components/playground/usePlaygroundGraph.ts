@@ -30,6 +30,7 @@ export function usePlaygroundGraph(
         MAX_ZOOM,
         Math.max(MIN_ZOOM, graph.zoom() * factor),
       )
+
       graph.zoomTo(nextZoom)
     }
   }
@@ -65,6 +66,7 @@ export function usePlaygroundGraph(
       }
 
       const viewport = container.value.parentElement
+
       if (!viewport) {
         return
       }
@@ -106,10 +108,10 @@ export function usePlaygroundGraph(
       status.value = 'ready'
     } catch (error) {
       dispose()
+
       if (!isDisposed) {
         status.value = 'error'
         // Preserve the underlying initialization error for debugging.
-        // oxlint-disable-next-line no-console
         console.error('Failed to initialize the playground', error)
       }
     }

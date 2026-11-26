@@ -11,13 +11,16 @@ const transformCallbacks = new WeakMap<Graph, Map<HTMLElement, () => void>>()
  */
 export function updateVueHtmlLayerTransform(graph: Graph) {
   const layer = layerMap.get(graph.container)
+
   if (layer) {
     const matrix = graph.matrix()
     const transform = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`
+
     if (layer.style.getPropertyValue('--x6-vue-transform') !== transform) {
       layer.style.setProperty('--x6-vue-transform', transform)
     }
   }
+
   transformCallbacks.get(graph)?.forEach(update => update())
 }
 
@@ -33,10 +36,12 @@ export function trackVueHtmlTransform(
   update?: () => void,
 ) {
   let callbacks = transformCallbacks.get(graph)
+
   if (!callbacks) {
     callbacks = new Map()
     transformCallbacks.set(graph, callbacks)
   }
+
   if (update) {
     callbacks.set(root, update)
   } else {
@@ -75,6 +80,7 @@ export function ensureVueHtmlLayer(graph: Graph): HTMLElement {
   }
 
   const computedStyle = globalThis.getComputedStyle(container)
+
   if (computedStyle.position === 'static') {
     container.style.position = 'relative'
   }
@@ -103,6 +109,7 @@ export function removeVueHtmlLayer(graph: Graph) {
 
   layer?.remove()
   layerMap.delete(container)
+
   // Custom-container nodes may still be alive when an empty owned layer is removed.
   if (!transformCallbacks.get(graph)?.size) {
     transformCallbacks.delete(graph)
@@ -117,6 +124,7 @@ export function removeVueHtmlLayer(graph: Graph) {
 export function releaseVueHtmlRoot(graph: Graph, root: HTMLElement) {
   transformCallbacks.get(graph)?.delete(root)
   const layer = layerMap.get(graph.container)
+
   if (layer && layer.childElementCount === 0) {
     layer.remove()
     layerMap.delete(graph.container)

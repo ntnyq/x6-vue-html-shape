@@ -9,12 +9,15 @@ describe('rich text node', () => {
       data: { title: 'Notes', html: '<p>Initial <b>notes</b></p>' },
     })
     const container = document.createElement('div')
+
     document.body.append(container)
     const app = createApp(() => h(RichTextNodeCard, { node, graph: {} }))
+
     try {
       app.mount(container)
       await nextTick()
       const editor = container.querySelector<HTMLElement>('[contenteditable]')!
+
       expect(editor.innerHTML).toBe('<p>Initial <b>notes</b></p>')
 
       node.setData({ html: '<p>Updated notes</p>' })

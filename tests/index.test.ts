@@ -57,15 +57,18 @@ describe('events', () => {
   it.each(['button', 'a'])('protects nested content inside %s', tag => {
     const control = document.createElement(tag)
     const label = document.createElement('span')
+
     control.append(label)
     expect(shouldStopGraphMouseDown(label)).toBe(true)
   })
 
   it('protects SVG descendants of a stop marker', () => {
     const wrapper = document.createElement('div')
+
     wrapper.dataset['x6VueStop'] = ''
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+
     icon.append(path)
     wrapper.append(icon)
     expect(shouldStopGraphMouseDown(path)).toBe(true)
@@ -75,8 +78,10 @@ describe('events', () => {
     'protects inherited contenteditable=%s',
     value => {
       const editor = document.createElement('div')
+
       editor.setAttribute('contenteditable', value)
       const child = document.createElement('span')
+
       editor.append(child)
       expect(shouldStopGraphMouseDown(child)).toBe(true)
       child.setAttribute('contenteditable', 'false')
@@ -96,8 +101,10 @@ describe('events', () => {
 
   it('stops mousedown when stop marker exists in ancestor', () => {
     const wrapper = document.createElement('div')
+
     wrapper.dataset['x6VueStop'] = ''
     const child = document.createElement('span')
+
     wrapper.append(child)
 
     expect(shouldStopGraphMouseDown(child)).toBe(true)

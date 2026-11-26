@@ -26,15 +26,18 @@ afterEach(() => {
 function createHost(graph: Graph, label: string) {
   const Host = createVueHtmlTeleport(graph)
   const root = document.createElement('div')
+
   document.body.append(root)
   const app = createApp(
     defineComponent({
       setup() {
         provide('label', label)
+
         return () => h(Host)
       },
     }),
   )
+
   app.component(
     'GlobalLabel',
     defineComponent(() => () => h('b', 'global')),
@@ -46,9 +49,11 @@ function createHost(graph: Graph, label: string) {
 describe('Vue HTML Teleport', () => {
   it('inherits scoped providers and global components, updates props and disposes children', async () => {
     const graph = {} as Graph
+
     createHost(graph, 'parent')
     const node = new Node({ id: 'shared' })
     const root = document.createElement('div')
+
     document.body.append(root)
     const unmounted = vi.fn()
     const props = shallowRef({ suffix: 'old' })
@@ -58,16 +63,20 @@ describe('Vue HTML Teleport', () => {
         const label = inject('label')
         const getNode = inject<() => Node>('getNode')
         const getGraph = inject<() => Graph>('getGraph')
+
         expect(getNode?.()).toBe(node)
         expect(getGraph?.()).toBe(graph)
         expect(componentProps.node).toBe(node)
         const GlobalLabel = resolveComponent('GlobalLabel')
+
         onUnmounted(unmounted)
+
         return () =>
           h('div', [h(GlobalLabel), `${label}:${componentProps.suffix}`])
       },
     })
     const handle = mountVueComponent({ graph, node, root, component, props })
+
     await nextTick()
     expect(root.textContent).toBe('globalparent:old')
     props.value = { suffix: 'new' }
@@ -83,11 +92,13 @@ describe('Vue HTML Teleport', () => {
     const component = defineComponent({
       setup() {
         const label = inject('label')
+
         return () => h('span', String(label))
       },
     })
     const first = {} as Graph
     const second = {} as Graph
+
     createHost(first, 'first')
     createHost(second, 'second')
     const roots = [document.createElement('div'), document.createElement('div')]
@@ -99,6 +110,7 @@ describe('Vue HTML Teleport', () => {
         component,
       }),
     )
+
     await nextTick()
     expect(roots.map(root => root.textContent)).toStrictEqual([
       'first',

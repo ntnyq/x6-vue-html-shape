@@ -88,6 +88,7 @@ export function registerVueHtmlShapeNode(
           if (metadata.markup === undefined || metadata.markup === null) {
             const primer =
               (metadata as VueHtmlShapeProperties).primer || options.primer
+
             metadata.markup = getPrimerMarkup(primer)
             metadata.attrs = ObjectExt.merge(
               {},

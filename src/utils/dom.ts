@@ -76,6 +76,7 @@ export function injectStyle() {
   }
 
   const style = document.createElement('style')
+
   style.id = STYLE_ID
   style.textContent = STYLE_TEXT
   document.head.append(style)

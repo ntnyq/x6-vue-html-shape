@@ -44,6 +44,7 @@ export function getHtmlNodeGeometry(
     props.scaleContent === false ? Math.hypot(matrixA, matrixB) || 1 : 1
   const sy =
     props.scaleContent === false ? Math.hypot(matrixC, matrixD) || 1 : 1
+
   return {
     width: `${bbox.width * sx}px`,
     height: `${bbox.height * sy}px`,

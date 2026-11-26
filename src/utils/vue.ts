@@ -32,9 +32,11 @@ export function mountVueComponent(
   options: MountVueOptions,
 ): Pick<App, 'unmount'> {
   const teleported = mountTeleportComponent(options)
+
   if (teleported) {
     return teleported
   }
+
   const { component, root, node, graph, props } = options
 
   const app = createApp({

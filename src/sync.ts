@@ -41,9 +41,11 @@ interface NodeEventPayload {
  */
 export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
   const existing = syncDisposers.get(graph)
+
   if (existing) {
     return existing
   }
+
   let disposed = false
   let raf: number | null = null
   let shouldUpdateAll = false
@@ -62,6 +64,7 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
   const flush = () => {
     raf = null
     const nodes = shouldUpdateAll ? graph.getNodes() : [...pendingNodes]
+
     shouldUpdateAll = false
     pendingNodes.clear()
 
@@ -74,8 +77,10 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     if (disposed) {
       return
     }
+
     if (options.useAnimationFrame === false) {
       flush()
+
       return
     }
 
@@ -94,6 +99,7 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
     if (!shouldUpdateAll) {
       pendingNodes.add(node)
     }
+
     schedule()
   }
 
@@ -103,6 +109,7 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
       updateVueHtmlLayerTransform(graph)
     }
   }
+
   graph.on('scale', updateTransform)
   graph.on('translate', updateTransform)
   graph.on('resize', updateTransform)
@@ -117,24 +124,29 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
   // Direct matrix changes and graph rotation do not emit scale/translate events.
   const viewport = graph.view?.viewport
   const observer = viewport ? new MutationObserver(updateTransform) : undefined
+
   if (viewport) {
     observer?.observe(viewport, {
       attributes: true,
       attributeFilter: ['transform'],
     })
   }
+
   updateTransform()
 
   const dispose = () => {
     if (disposed) {
       return
     }
+
     disposed = true
     observer?.disconnect()
+
     if (raf !== null) {
       cancelAnimationFrame(raf)
       raf = null
     }
+
     pendingNodes.clear()
     shouldUpdateAll = false
     graph.off('scale', updateTransform)
@@ -160,6 +172,7 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
       dispose()
       // Graph disposal has already removed the node views at this point.
       const layer = graph.container.querySelector('.x6-vue-html-layer')
+
       if (layer?.childElementCount === 0) {
         removeVueHtmlLayer(graph)
       }
@@ -170,6 +183,8 @@ export function setupVueHtmlShapeSync(graph: Graph, options: SyncOptions = {}) {
       graph.disposePlugins(SYNC_PLUGIN_NAME)
     }
   }
+
   syncDisposers.set(graph, stop)
+
   return stop
 }

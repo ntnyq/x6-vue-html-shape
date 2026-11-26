@@ -8,6 +8,7 @@ import {
 
 function assertNode(node: Node | null): asserts node is Node {
   expect(node?.isNode()).toBe(true)
+
   if (!node) {
     throw new Error('Demo edges must connect nodes, not fixed points')
   }
@@ -21,17 +22,20 @@ describe('playground connections', () => {
     '%s follows both endpoint nodes',
     (_name, populate) => {
       const model = new Model()
+
       populate(model)
       expect(model.getEdges().length).toBeGreaterThan(0)
 
       for (const edge of model.getEdges()) {
         const source = edge.getSourceNode()
         const target = edge.getTargetNode()
+
         assertNode(source)
         assertNode(target)
 
         const sourcePoint = edge.getSourcePoint()
         const targetPoint = edge.getTargetPoint()
+
         source.translate(80, 60)
         target.translate(-40, 20)
         expect(edge.getSourcePoint().toJSON()).toStrictEqual({
@@ -47,10 +51,12 @@ describe('playground connections', () => {
       model.clear()
       expect(model.getCells()).toHaveLength(0)
       populate(model)
+
       for (const edge of model.getEdges()) {
         assertNode(edge.getSourceNode())
         assertNode(edge.getTargetNode())
       }
+
       model.dispose()
     },
   )

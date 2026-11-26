@@ -31,9 +31,11 @@ export function shouldStopGraphMouseDown(target: EventTarget | null): boolean {
     element = element.parentElement
   ) {
     const editable = element.getAttribute('contenteditable')?.toLowerCase()
+
     if (editable === 'false') {
       return false
     }
+
     if (
       editable === '' ||
       editable === 'true' ||

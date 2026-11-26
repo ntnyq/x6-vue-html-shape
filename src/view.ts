@@ -56,6 +56,7 @@ export class VueHtmlShapeView extends NodeView {
       this.updateHtmlPosition()
       this.updateHtmlVisible()
     })
+
     return this.handleAction(updated, VueHtmlShapeView.geometryAction, () => {
       this.updateHtmlAttributes()
       this.updateHtmlPosition()
@@ -101,6 +102,7 @@ export class VueHtmlShapeView extends NodeView {
       : ensureVueHtmlLayer(graph)
 
     const htmlRoot = document.createElement('div')
+
     htmlRoot.className = HTML_NODE_CLASS
     htmlRoot.dataset['x6NodeId'] = String(this.cell.id)
     htmlRoot.dataset['cellId'] = String(this.cell.id)
@@ -109,6 +111,7 @@ export class VueHtmlShapeView extends NodeView {
     htmlRoot.addEventListener('touchstart', stopInteractiveMouseDown)
 
     const contentRoot = document.createElement('div')
+
     contentRoot.className = HTML_NODE_CONTENT_CLASS
     htmlRoot.append(contentRoot)
     layer.append(htmlRoot)
@@ -130,17 +133,20 @@ export class VueHtmlShapeView extends NodeView {
 
     if (!component) {
       this.removeHtmlRoot()
+
       return
     }
 
     const props = this.getNodeProperties()
     const { contentRoot } = this.ensureHtmlRoot()
+
     this.componentProps.value = props.props || {}
 
     const shouldRemount =
       !this.app ||
       this.mountedComponent !== component ||
       props.keepAliveOnUpdate === false
+
     if (shouldRemount) {
       this.unmountVueComponent()
 
@@ -159,13 +165,16 @@ export class VueHtmlShapeView extends NodeView {
     if (!this.htmlRoot) {
       return
     }
+
     const props = this.getNodeProperties()
     const container = props.getContainer
       ? props.getContainer(this.graph, this.cell)
       : ensureVueHtmlLayer(this.graph)
+
     if (this.htmlRoot.parentElement !== container) {
       container.append(this.htmlRoot)
     }
+
     this.htmlRoot.className = [HTML_NODE_CLASS, props.htmlClassName]
       .filter(Boolean)
       .join(' ')
@@ -190,6 +199,7 @@ export class VueHtmlShapeView extends NodeView {
 
     const node = this.cell
     const props = this.getNodeProperties()
+
     Object.assign(
       this.htmlRoot.style,
       getHtmlNodeGeometry(node, this.graph, props),
@@ -209,6 +219,7 @@ export class VueHtmlShapeView extends NodeView {
 
     const props = this.getNodeProperties()
     const visible = this.cell.isVisible()
+
     this.htmlRoot.classList.toggle(
       'is-hidden',
       props.syncVisible !== false && !visible,
@@ -238,9 +249,11 @@ export class VueHtmlShapeView extends NodeView {
     this.htmlRoot?.removeEventListener('mousedown', stopInteractiveMouseDown)
     this.htmlRoot?.removeEventListener('touchstart', stopInteractiveMouseDown)
     this.htmlRoot?.remove()
+
     if (this.htmlRoot) {
       releaseVueHtmlRoot(this.graph, this.htmlRoot)
     }
+
     this.htmlRoot = undefined
     this.contentRoot = undefined
     this.htmlStyle = {}

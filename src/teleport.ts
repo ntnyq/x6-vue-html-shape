@@ -27,6 +27,7 @@ const NodeContent = defineComponent({
   setup(props) {
     provide('getNode', () => props.entry.node)
     provide('getGraph', () => props.entry.graph)
+
     return () =>
       h(props.entry.component, {
         ...unref(props.entry.props),
@@ -51,6 +52,7 @@ export function createVueHtmlTeleport(graph: Graph): Component {
           'A Vue HTML Teleport host is already mounted for this graph.',
         )
       }
+
       const host: TeleportHost = {
         entries: shallowReactive(new Map()),
       }

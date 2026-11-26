@@ -19,6 +19,7 @@ function mountView(
   properties: Omit<VueHtmlShapeProperties, 'markup' | 'attrs'> = {},
 ) {
   const container = document.createElement('div')
+
   document.body.append(container)
   const matrix = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
   // Exercise X6's real change flags and view lifecycle, without SVG layout.
@@ -39,9 +40,11 @@ function mountView(
     ...properties,
   })
   const view = new VueHtmlShapeView(node, { graph })
+
   views.push(view)
   view.confirmUpdate(view.getFlag(VueHtmlShapeView.action))
   const root = container.querySelector<HTMLElement>('.x6-vue-html-node')!
+
   return { container, graph, matrix, node, root, view }
 }
 
@@ -49,6 +52,7 @@ afterEach(() => {
   for (const view of views.splice(0)) {
     view.remove()
   }
+
   document.body.innerHTML = ''
 })
 
@@ -60,11 +64,13 @@ describe('Vue HTML view', () => {
       view,
       root,
     } = mountView({ scaleContent: false })
+
     Object.assign(graphMatrix, { a: 2, d: 3, e: 10, f: 20 })
     node.setProp('angle', 90, { silent: true })
     view.updateHtmlPosition()
     const matrix = root.style.transform.slice(7, -1).split(',').map(Number)
     const expected = [0, 1, -1, 0, 170, -40]
+
     matrix.forEach((value, index) =>
       expect(value).toBeCloseTo(expected[index]!),
     )
@@ -77,6 +83,7 @@ describe('Vue HTML view', () => {
       htmlClassName: 'old',
       htmlStyle: { color: 'red', '--accent': 'red' },
     })
+
     node.setProp('htmlClassName', 'new')
     node.setProp('htmlStyle', { backgroundColor: 'blue' }, { rewrite: true })
     node.setProp('interactive', false)
@@ -96,6 +103,7 @@ describe('Vue HTML view', () => {
 
   it('clears hidden state when visibility synchronization is disabled', () => {
     const { node, root, view } = mountView()
+
     node.setProp('visible', false, { silent: true })
     view.updateHtmlVisible()
     expect(root.classList.contains('is-hidden')).toBe(true)
@@ -105,6 +113,7 @@ describe('Vue HTML view', () => {
 
   it('removes the old component and the empty layer when component is cleared', () => {
     const { node, container } = mountView()
+
     node.removeProp('component')
     expect(container.querySelector('.x6-vue-html-node')).toBeNull()
     expect(container.querySelector('.x6-vue-html-layer')).toBeNull()
@@ -114,10 +123,12 @@ describe('Vue HTML view', () => {
     const mounted = vi.fn()
     const component = defineComponent(() => {
       onMounted(mounted)
+
       return () => h('span', 'Node')
     })
     const { node, root } = mountView({ component })
     const container = document.createElement('div')
+
     node.setProp('getContainer', () => container)
     expect(root.parentElement).toBe(container)
     expect(mounted).toHaveBeenCalledExactlyOnceWith()
@@ -125,6 +136,7 @@ describe('Vue HTML view', () => {
 
   it('identifies HTML descendants as the owning X6 cell', () => {
     const { node, root } = mountView()
+
     expect(
       root.firstElementChild?.closest<HTMLElement>('[data-cell-id]')?.dataset[
         'cellId'
@@ -141,9 +153,11 @@ describe('Vue HTML view', () => {
       )
       const { container, root } = mountView({ component })
       const graphHandler = vi.fn((event: Event) => event.preventDefault())
+
       container.addEventListener(eventType, graphHandler)
       const label = root.querySelector('span')!
       const event = new Event(eventType, { bubbles: true, cancelable: true })
+
       label.dispatchEvent(event)
       label.click()
       expect(event.defaultPrevented).toBe(false)
@@ -159,14 +173,17 @@ describe('Vue HTML view', () => {
     'removes the %s guard on unmount',
     eventType => {
       const { container, root, view } = mountView()
+
       view.unmount()
       expect(container.querySelector('.x6-vue-html-node')).toBeNull()
       // A detached root retained by callers must no longer intercept events.
       const wrapper = document.createElement('div')
       const stopped = vi.fn()
+
       wrapper.addEventListener(eventType, stopped)
       wrapper.append(root)
       const button = document.createElement('button')
+
       root.append(button)
       button.dispatchEvent(new Event(eventType, { bubbles: true }))
       expect(stopped).toHaveBeenCalledExactlyOnceWith(expect.any(Event))
@@ -179,7 +196,9 @@ describe('Vue HTML view', () => {
       props: { label: { type: String, default: 'default' } },
       setup(props) {
         const count = shallowRef(0)
+
         onMounted(mounted)
+
         return () =>
           h(
             'button',
@@ -189,6 +208,7 @@ describe('Vue HTML view', () => {
       },
     })
     const { node, root } = mountView({ component, props: { label: 'old' } })
+
     root.querySelector('button')!.click()
     node.setPropByPath('props/label', 'new')
     await nextTick()
@@ -209,6 +229,7 @@ describe('Vue HTML view', () => {
       setup(props) {
         onMounted(mounted)
         onUnmounted(unmounted)
+
         return () => h('span', props.label)
       },
     })
@@ -217,6 +238,7 @@ describe('Vue HTML view', () => {
       props: { label: 'old' },
       keepAliveOnUpdate: false,
     })
+
     node.setPropByPath('props/label', 'new')
     await nextTick()
     expect(root.textContent).toBe('new')
@@ -231,11 +253,13 @@ describe('Vue HTML view', () => {
       setup(props) {
         useX6NodeData(props.node)
         onUnmounted(unmounted)
+
         return () => h('div', 'Node')
       },
     })
     const { node, view, container } = mountView({ component })
     const off = vi.spyOn(node, 'off')
+
     view.remove()
     expect(unmounted).toHaveBeenCalledExactlyOnceWith()
     expect(off).toHaveBeenCalledWith('change:data', expect.any(Function))

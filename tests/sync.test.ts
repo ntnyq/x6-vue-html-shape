@@ -29,6 +29,7 @@ class MockGraph {
 
   public on(event: string, handler: Handler) {
     const set = this.handlers.get(event) || new Set<Handler>()
+
     set.add(handler)
     this.handlers.set(event, set)
   }
@@ -88,6 +89,7 @@ describe('sync', () => {
     const graph = new MockGraph()
     const first = { id: 'a' }
     const second = { id: 'b' }
+
     graph.setNodes([first, second])
     const dispose = setupVueHtmlShapeSync(graph as never)
 
@@ -102,8 +104,10 @@ describe('sync', () => {
     vi.useFakeTimers()
     const graph = new MockGraph()
     const node = { id: 'a' }
+
     graph.setNodes([node])
     const dispose = setupVueHtmlShapeSync(graph as never)
+
     graph.emit('node:change:position', { node })
     graph.emit('scale')
     dispose()
@@ -115,12 +119,14 @@ describe('sync', () => {
 
   it('shares the matrix on scale without traversing nodes', () => {
     const graph = new MockGraph()
+
     graph.setNodes([{ id: '1' }, { id: '2' }])
 
     const layer = ensureVueHtmlLayer(graph as unknown as Graph)
     const dispose = setupVueHtmlShapeSync(graph as never, {
       useAnimationFrame: false,
     })
+
     graph.emit('scale')
 
     expect(graph.findViewByCell).not.toHaveBeenCalled()
@@ -135,11 +141,13 @@ describe('sync', () => {
     const first = setupVueHtmlShapeSync(graph as never, {
       useAnimationFrame: false,
     })
+
     expect(setupVueHtmlShapeSync(graph as never)).toBe(first)
     first()
     const second = setupVueHtmlShapeSync(graph as never, {
       useAnimationFrame: false,
     })
+
     first()
     graph.emit('node:change:position', { node: { id: 'a' } })
     expect(graph.findViewByCell).toHaveBeenCalledExactlyOnceWith({ id: 'a' })
@@ -162,6 +170,7 @@ describe('sync', () => {
     const dispose = setupVueHtmlShapeSync(graph as never, {
       useAnimationFrame: false,
     })
+
     dispose()
 
     graph.emit('scale')

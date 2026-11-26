@@ -27,7 +27,6 @@ const shapes: string[] = []
 
 async function nextFrame() {
   // Browser layout and MutationObserver callbacks must complete before assertions.
-  // oxlint-disable-next-line promise/avoid-new
   await new Promise(requestAnimationFrame)
 }
 
@@ -44,12 +43,15 @@ afterEach(async () => {
 
 function createGraph() {
   const container = document.createElement('div')
+
   container.style.cssText = 'position: relative; width: 800px; height: 600px;'
   document.body.append(container)
   containers.push(container)
   const graph = new Graph({ container, width: 800, height: 600, async: false })
+
   graphs.push(graph)
   setupVueHtmlShapeSync(graph)
+
   return graph
 }
 
@@ -60,8 +62,10 @@ function register(
   ),
 ) {
   const shape = `browser-node-${shapes.length}`
+
   shapes.push(shape)
   registerVueHtmlNode({ shape, component })
+
   return shape
 }
 
@@ -69,19 +73,24 @@ function getRoot(graph: Graph, node: Node) {
   const root = graph.container.querySelector<HTMLElement>(
     `.x6-vue-html-node[data-cell-id="${node.id}"]`,
   )
+
   if (!root) {
     throw new Error('Missing HTML node')
   }
+
   return root
 }
 
 function expectAligned(graph: Graph, node: Node) {
   const body = graph.findViewByCell(node)?.container.querySelector('rect')
+
   if (!body) {
     throw new Error('Missing SVG node body')
   }
+
   const svg = body.getBoundingClientRect()
   const html = getRoot(graph, node).getBoundingClientRect()
+
   for (const key of ['x', 'y', 'width', 'height'] as const) {
     expect(Math.abs(svg[key] - html[key])).toBeLessThan(0.5)
   }
@@ -98,6 +107,7 @@ describe('real X6 graph integration', () => {
       height: 90,
     })
     const moved = vi.fn()
+
     graph.on('node:moved', moved)
     await userEvent.dragAndDrop(getRoot(graph, node), graph.container, {
       sourcePosition: { x: 20, y: 20 },
@@ -120,6 +130,7 @@ describe('real X6 graph integration', () => {
       height: 90,
       scaleContent: false,
     })
+
     node.rotate(35)
     graph.scale(1.5, 0.75)
     graph.translate(25, 35)
@@ -127,6 +138,7 @@ describe('real X6 graph integration', () => {
     node.setProp('scaleContent', true)
     expectAligned(graph, node)
     const custom = document.createElement('div')
+
     custom.style.cssText = 'position:absolute;inset:0;pointer-events:none;'
     graph.container.append(custom)
     node.setProp('getContainer', () => custom)
@@ -149,6 +161,7 @@ describe('real X6 graph integration', () => {
       width: 160,
       height: 90,
     })
+
     expectAligned(graph, node)
     node.rotate(35)
     node.resize(190, 110)
@@ -165,12 +178,15 @@ describe('real X6 graph integration', () => {
   it('updates the shared transform without writing each normal node style', async () => {
     const graph = createGraph()
     const shape = register()
+
     for (let index = 0; index < 100; index++) {
       graph.addNode({ shape, x: index * 10, y: 30, width: 80, height: 40 })
     }
+
     await nextFrame()
     const changed: MutationRecord[] = []
     const observer = new MutationObserver(records => changed.push(...records))
+
     graph.container.querySelectorAll('.x6-vue-html-node').forEach(root =>
       observer.observe(root, {
         attributes: true,
@@ -187,9 +203,11 @@ describe('real X6 graph integration', () => {
 
   it('initializes a newly created layer when a custom node returns to the graph', () => {
     const graph = createGraph()
+
     graph.scale(1.5, 0.75)
     graph.translate(20, 30)
     const custom = document.createElement('div')
+
     custom.style.cssText = 'position:absolute;inset:0;'
     graph.container.append(custom)
     const node = graph.addNode({
@@ -200,6 +218,7 @@ describe('real X6 graph integration', () => {
       height: 90,
       getContainer: () => custom,
     })
+
     expect(graph.container.querySelector('.x6-vue-html-layer')).toBeNull()
     node.removeProp('getContainer')
     expectAligned(graph, node)
@@ -208,6 +227,7 @@ describe('real X6 graph integration', () => {
   it('preserves Vue providers and input focus and cleans up on graph disposal', async () => {
     const graph = createGraph()
     const host = document.createElement('div')
+
     document.body.append(host)
     containers.push(host)
     const Host = createVueHtmlTeleport(graph)
@@ -215,10 +235,12 @@ describe('real X6 graph integration', () => {
       defineComponent({
         setup() {
           provide('label', 'Inherited label')
+
           return () => h(Host)
         },
       }),
     )
+
     apps.push(app)
     app.mount(host)
     const unmounted = vi.fn()
@@ -226,7 +248,9 @@ describe('real X6 graph integration', () => {
       defineComponent({
         setup() {
           const label = inject<string>('label')
+
           onUnmounted(unmounted)
+
           return () =>
             h('input', {
               'aria-label': label,
@@ -242,6 +266,7 @@ describe('real X6 graph integration', () => {
       width: 200,
       height: 60,
     })
+
     await nextTick()
     await page
       .getByRole('textbox', { name: 'Inherited label' })
