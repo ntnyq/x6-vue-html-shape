@@ -43,7 +43,7 @@ Comparison baseline: **`@antv/x6-vue-shape@3.0.2`**, checked on 2026-09-14.
 | Graph transforms        | Shared CSS matrix; explicit sync setup                     | SVG transform inheritance                                         |
 | Registration shortcut   | Forwards X6 node defaults; duplicates rejected by default  | Forwards node defaults; overwrites                                |
 | Content scale           | Supports `scaleContent: false`                             | No matching option in the inspected renderer                      |
-| Export and mixed layers | HTML omitted from SVG export; cross-layer ordering limited | Content remains in the SVG scene, subject to export compatibility |
+| Export and mixed layers | Optional SVG export cards and limited cross-layer ordering | Content remains in the SVG scene, subject to export compatibility |
 | Performance             | No comparative benchmark or node-count guarantee           | No measured ranking established by this review                    |
 
 The [detailed comparison](docs/guide/comparison.md) covers registration, state,
@@ -120,8 +120,9 @@ pnpm test:browser
 
 Unit and browser tests cover geometry, selection stacking, SVG labels, cursor
 updates, dragging, input focus, context and disposal. Browser scenarios run in
-Chromium, Firefox and WebKit. See
-[production readiness](docs/guide/production-readiness.md) for test evidence,
+Chromium, Firefox and WebKit and include the
+[native port and MiniMap migration recipes](docs/guide/migration.md#keep-native-ports-reachable).
+See [production readiness](docs/guide/production-readiness.md) for test evidence,
 remaining release criteria and architectural limitations.
 
 ## Compatibility mode (`vue-shape`)
@@ -158,11 +159,13 @@ graph.addNode({
 - `setupVueHtmlShapeSync(graph)` synchronize node HTML overlays with graph transform and node changes.
 - `useX6NodeData(node)` reactive helper for `node.getData()` updates in Vue components.
 - `createVueHtmlTeleport(graph)` create a graph-specific Vue context host.
+- `createVueHtmlSvgExportHook(graph, renderNode)` snapshot static SVG cards for X6 export.
 
 ## Limitations
 
 - HTML nodes are rendered in a separate overlay layer, not inside SVG.
-- Exporting pure SVG does not include HTML node content.
+- X6 exports its SVG scene. Supply a static representation for Vue cards with
+  the [SVG and PNG export hook](docs/guide/export.md).
 - Interleaving z-index ordering between SVG edges and HTML nodes is limited.
 - Ports/magnets should remain in native X6 SVG nodes.
 - Popups may overflow a node, but remain clipped by the graph viewport. Teleport
@@ -170,7 +173,7 @@ graph.addNode({
 - Custom containers must share the graph container's coordinate origin and
   positioning context. Containers outside the graph do not receive X6's delegated
   pointer events automatically.
-- Selection/history/scroller/minimap/virtualization combinations, real iOS touch
+- Selection/history/scroller/virtualization combinations, real iOS touch
   and comparative performance remain unverified. See the
   [production readiness matrix](docs/guide/production-readiness.md).
 - Node dimensions come from X6; intrinsic Vue content size does not automatically

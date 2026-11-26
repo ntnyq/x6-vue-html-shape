@@ -3,6 +3,9 @@ import { registerVueHtmlNode } from 'x6-vue-html-shape'
 import FormNodeCard from '../FormNodeCard.vue'
 import RichTextNodeCard from '../RichTextNodeCard.vue'
 import TextNodeCard from '../TextNodeCard.vue'
+import { CASE_FLOW_SHAPE } from './caseFlow'
+import type { CaseFlowNodeData } from './caseFlow'
+import CaseFlowNodeCard from './CaseFlowNodeCard.vue'
 
 export function registerDemoShapes() {
   for (const [shape, component] of [
@@ -12,12 +15,38 @@ export function registerDemoShapes() {
     ['demo-mixed-text', TextNodeCard],
     ['demo-mixed-rich', RichTextNodeCard],
     ['demo-mixed-form', FormNodeCard],
+    [CASE_FLOW_SHAPE, CaseFlowNodeCard],
   ] as const) {
     registerVueHtmlNode({ shape, component, overwrite: true })
   }
 }
 
 export const DEMO_SCENES = {
+  'case-flow': (graph: Pick<Graph, 'addNode' | 'addEdge'>) => {
+    graph.addNode({
+      id: 'case-intake',
+      shape: CASE_FLOW_SHAPE,
+      x: 64,
+      y: 80,
+      width: 232,
+      height: 100,
+      data: { step: 'intake', status: 'opened' } satisfies CaseFlowNodeData,
+    })
+    graph.addNode({
+      id: 'case-review',
+      shape: CASE_FLOW_SHAPE,
+      x: 400,
+      y: 80,
+      width: 232,
+      height: 100,
+      data: { step: 'review', status: 'reviewing' } satisfies CaseFlowNodeData,
+    })
+    graph.addEdge({
+      source: { cell: 'case-intake', anchor: 'right' },
+      target: { cell: 'case-review', anchor: 'left' },
+      attrs: { line: { stroke: '#64748b', strokeWidth: 2 } },
+    })
+  },
   'text-node': (graph: Pick<Graph, 'addNode' | 'addEdge'>) => {
     graph.addNode({
       id: 'text-node-1',

@@ -99,6 +99,270 @@ The alias does not reproduce the official `register`, `getTeleport`, internal
 view name, export behavior or DOM structure. Avoid importing both packages to
 compete for `vue-shape`: register distinct names if both renderers must coexist.
 
+## Keep native ports reachable
+
+Keep port definitions and magnets in X6. The Vue card sits above the SVG, so
+check both where the port is painted and what receives the pointer.
+
+### Place the entire port outside the card
+
+For an output on the right or bottom edge, offset the port outwards from its
+X6 layout position. Leave enough clearance for the full magnet, including its
+stroke or any larger hit area. Reverse the offset for left or top ports.
+This example uses a 6 px radius and 1 px stroke.
+
+```ts
+import { registerVueHtmlNode } from 'x6-vue-html-shape'
+import TaskCard from './TaskCard.vue'
+
+const output = {
+  attrs: {
+    circle: {
+      r: 6,
+      strokeWidth: 1,
+      magnet: true,
+    },
+  },
+}
+
+registerVueHtmlNode({
+  shape: 'task-node',
+  component: TaskCard,
+  width: 180,
+  height: 100,
+  ports: {
+    groups: {
+      right: { ...output, position: 'right' },
+      bottom: { ...output, position: 'bottom' },
+    },
+    items: [
+      {
+        id: 'out-right',
+        group: 'right',
+        args: {
+          dx: 10,
+        },
+      },
+      {
+        id: 'out-bottom',
+        group: 'bottom',
+        args: {
+          dy: 10,
+        },
+      },
+    ],
+  },
+})
+```
+
+Use the item-level `args` for these offsets. Leave room between neighboring
+cards and at the graph viewport edge so the offset ports remain exposed.
+
+### Let inset ports receive pointer events
+
+If a port must sit inside the HTML wrapper, set `interactive: false` in the
+shape defaults or on the node instance. The wrapper then lets the event reach
+the SVG magnet. Set `pointer-events: auto` on the individual controls and the
+drag handle. Keep those elements clear of the magnet.
+
+For the `task-node` defined above, move `out-right` inside the wrapper and
+reserve a 26 px transparent strip on that side of the card.
+
+```ts
+const node = graph.addNode({
+  shape: 'task-node',
+  x: 80,
+  y: 70,
+  interactive: false,
+})
+node.setPortProp('out-right', 'args/dx', -16)
+```
+
+Put the card background on the inset surface so the SVG port is visible through
+the strip.
+
+```vue
+<template>
+  <div class="card-surface">
+    <div class="drag-handle">Drag task</div>
+    <button type="button">Run</button>
+    <input aria-label="Task name" />
+  </div>
+</template>
+
+<style scoped>
+.card-surface {
+  position: absolute;
+  inset: 0 26px 0 0;
+  background: white;
+}
+
+.drag-handle,
+button,
+input {
+  pointer-events: auto;
+}
+
+.drag-handle {
+  cursor: move;
+}
+</style>
+```
+
+The library's built-in interaction guard lets buttons and inputs handle their
+own mouse and touch events. Mark custom controls with `data-x6-vue-stop` when
+they need the same protection. Leave that attribute off the drag handle so
+X6 receives its drag events.
+
+## Connect X6 MiniMap
+
+X6 MiniMap creates a second graph that shares the main graph's model and has its
+own viewport. Choose how that graph renders your Vue shapes. The examples below
+assume `task-node` has already been registered. [X6 MiniMap documentation](https://x6.antv.antgroup.com/en/tutorial/plugins/minimap)
+
+### Render Vue cards in the minimap
+
+Call `setupVueHtmlShapeSync` on the graph returned by `MiniMap.createGraph`.
+This keeps the preview's HTML cards aligned with its SVG viewport at the
+preview's zoom and pan. When a card uses app providers such as i18n, render one
+Teleport host per graph under the providers and wait for both to mount before
+adding or loading nodes.
+
+```vue
+<script setup lang="ts">
+import { Graph, MiniMap } from '@antv/x6'
+import { nextTick, onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import type { Component } from 'vue'
+import { createVueHtmlTeleport, setupVueHtmlShapeSync } from 'x6-vue-html-shape'
+import 'x6-vue-html-shape/style.css'
+
+const canvas = shallowRef<HTMLElement>()
+const minimap = shallowRef<HTMLElement>()
+const mainHost = shallowRef<Component>()
+const minimapHost = shallowRef<Component>()
+
+let graph: Graph | undefined
+
+onMounted(async () => {
+  if (!canvas.value || !minimap.value) return
+
+  const instance = new Graph({
+    container: canvas.value,
+    width: 640,
+    height: 420,
+  })
+  graph = instance
+  setupVueHtmlShapeSync(instance)
+  mainHost.value = createVueHtmlTeleport(instance)
+  instance.use(
+    new MiniMap({
+      container: minimap.value,
+      graphOptions: { async: true },
+      createGraph(options) {
+        const preview = new Graph(options)
+
+        setupVueHtmlShapeSync(preview)
+        minimapHost.value = createVueHtmlTeleport(preview)
+
+        return preview
+      },
+    }),
+  )
+
+  await nextTick()
+  if (graph !== instance) return
+
+  instance.addNode({ shape: 'task-node', x: 80, y: 70 })
+})
+
+onBeforeUnmount(() => {
+  graph?.dispose()
+  graph = undefined
+})
+</script>
+
+<template>
+  <div ref="canvas" />
+  <div
+    ref="minimap"
+    class="diagram-minimap"
+  />
+  <component
+    :is="mainHost"
+    v-if="mainHost"
+  />
+  <component
+    :is="minimapHost"
+    v-if="minimapHost"
+  />
+</template>
+
+<style scoped>
+.diagram-minimap :deep(.x6-vue-html-node),
+.diagram-minimap :deep(.x6-vue-html-node *) {
+  pointer-events: none !important;
+}
+</style>
+```
+
+The preview CSS keeps pointer events available to the minimap. For editable
+cards, render a static preview when the component's `graph` prop is the
+secondary graph so its controls also stay out of keyboard navigation.
+
+For toggling, call `graph.disposePlugins('minimap')` before removing the preview
+host. X6 disposes the secondary graph and keeps the shared model live. Let Vue
+process the host removal with `await nextTick()`. On reopening, mount a new
+`MiniMap` with a fresh host. Keep `async: true` so X6 queues the initial preview
+render for a populated model, and await `nextTick()` before making model changes
+so the new host can mount first.
+
+### Render SVG outlines in the minimap
+
+For a lightweight preview, override the view through
+`MiniMap.graphOptions.createCellView`. The example draws a visible rectangle at
+the node's model size and leaves the default X6 views in place for other nodes
+and edges. List each of your Vue shape names in the hook.
+
+```ts
+import { MiniMap, NodeView } from '@antv/x6'
+import type { CellAttrs } from '@antv/x6'
+
+class MiniMapOutlineView extends NodeView {
+  protected override renderMarkup() {
+    this.renderJSONMarkup({
+      tagName: 'rect',
+      selector: 'minimapBody',
+      attrs: { fill: '#dbeafe', stroke: '#2563eb' },
+    })
+  }
+
+  override update(partialAttrs?: CellAttrs) {
+    super.update(partialAttrs)
+    const { width, height } = this.cell.getSize()
+    const body = this.findOne('minimapBody', this.container, this.selectors)!
+
+    body.setAttribute('width', String(width))
+    body.setAttribute('height', String(height))
+  }
+}
+
+graph.use(
+  new MiniMap({
+    container: minimapContainer,
+    graphOptions: {
+      createCellView(cell) {
+        return cell.isNode() && cell.shape === 'task-node'
+          ? MiniMapOutlineView
+          : undefined
+      },
+    },
+  }),
+)
+```
+
+Set up HTML synchronization and any needed Vue host on the main graph. Remove
+or recreate the SVG preview through the same X6 plugin lifecycle.
+
 ## Validate migrated behavior
 
 Check native dragging, input focus, touch, node visibility, rotation, pan/zoom,
@@ -106,9 +370,9 @@ reactive data, popup placement and component teardown in the target application.
 Then validate every required X6 plugin and your export path. Existing JSON data
 still requires its shape registry to be available before loading.
 
-For this release line, plain SVG/image exports omit HTML node content and arbitrary
-SVG/HTML layer interleaving is unavailable. Treat these as adoption constraints,
-not as settings that can be enabled after migration.
+For exports that need card content, provide a static representation through
+the [SVG and PNG export hook](./export.md). Account for the fixed SVG/HTML
+layer order when validating the editor.
 
 The official API mappings above are based on its published
 [registry](https://unpkg.com/@antv/x6-vue-shape@3.0.2/es/registry.js),

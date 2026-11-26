@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, shallowRef } from 'vue'
 import type { App } from 'vue'
+import type { DemoType } from '../docs/components/playground/demos'
 import { usePlaygroundGraph } from '../docs/components/playground/usePlaygroundGraph'
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   observe: vi.fn(),
   disconnect: vi.fn(),
   createGraph: vi.fn(),
+  createTeleport: vi.fn(),
+  populateCaseFlow: vi.fn(),
   resizeCallback: () => {},
 }))
 
@@ -28,16 +31,17 @@ vi.mock('@antv/x6', () => ({
   },
 }))
 vi.mock('x6-vue-html-shape', () => ({
+  createVueHtmlTeleport: mocks.createTeleport,
   setupVueHtmlShapeSync: () => mocks.disposeSync,
 }))
 vi.mock('../docs/components/playground/scenes', () => ({
   registerDemoShapes: vi.fn(),
-  DEMO_SCENES: { 'text-node': vi.fn() },
+  DEMO_SCENES: { 'text-node': vi.fn(), 'case-flow': mocks.populateCaseFlow },
 }))
 
 let app: App | null = null
 
-function mountPlayground() {
+function mountPlayground(demo: DemoType = 'text-node') {
   const host = document.createElement('div')
 
   document.body.append(host)
@@ -47,7 +51,7 @@ function mountPlayground() {
     setup() {
       const container = shallowRef<HTMLDivElement | null>(null)
 
-      state = usePlaygroundGraph(container, 'text-node')
+      state = usePlaygroundGraph(container, demo)
 
       return () => h('div', { class: 'viewport' }, h('div', { ref: container }))
     },
@@ -116,6 +120,22 @@ describe('playground lifecycle', () => {
     app = null
     await vi.dynamicImportSettled()
     expect(mocks.createGraph).not.toHaveBeenCalled()
+    expect(mocks.observe).not.toHaveBeenCalled()
+  })
+
+  it('does not populate Case Flow after leaving while its host is mounting', async () => {
+    mocks.createTeleport.mockImplementationOnce(() => {
+      queueMicrotask(() => {
+        app?.unmount()
+        app = null
+      })
+
+      return () => null
+    })
+
+    mountPlayground('case-flow')
+    await vi.waitFor(() => expect(mocks.disposeGraph).toHaveBeenCalledTimes(1))
+    expect(mocks.populateCaseFlow).not.toHaveBeenCalled()
     expect(mocks.observe).not.toHaveBeenCalled()
   })
 })

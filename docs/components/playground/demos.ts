@@ -17,6 +17,11 @@ export const DEMOS = {
     description:
       'Try inputs, selections and date pickers. Drag a header to move.',
   },
+  'case-flow': {
+    title: 'Case flow',
+    description:
+      'Switch card languages to see Vue context shared through a graph-specific Teleport host.',
+  },
 }
 
 export type DemoType = keyof typeof DEMOS

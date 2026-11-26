@@ -116,20 +116,23 @@ participates in the SVG scene. The separate-layer tradeoffs also appear in the
 | X6 model, edges and anchors               | Retained; examples create edges and tests check scene connections         | Both use X6 models; example edges are not a port-drag certification                      |
 | HTML node-to-node z-index                 | Selected nodes rise above unselected nodes in the same HTML layer         | Official content participates in the SVG ordering system                                 |
 | Arbitrary edge/node interleaving          | Unavailable across the fixed SVG/HTML layers                              | Keeping content in SVG avoids this separate-layer barrier                                |
-| Ports and magnets                         | Keep in native SVG; must remain exposed to pointer input                  | HTML above SVG can obscure them even though the port model exists                        |
+| Ports and magnets                         | Native dragging verified for exposed and inset ports                      | HTML above SVG can obscure them even though the port model exists                        |
 | Selection, tools, snaplines               | Unverified combinations and stacking behavior                             | Do not infer compatibility solely from NodeView inheritance                              |
 | History/undo, clipboard, embedding        | Unverified complete workflows                                             | Models remain in X6, but Vue instance state is not automatically graph history           |
 | Scroller and transformed outer containers | Unverified beyond the documented common-origin container case             | Additional coordinate/viewport integration may be required                               |
-| Minimap and virtualization                | Unverified                                                                | External HTML content may need explicit view lifecycle or secondary-graph integration    |
+| MiniMap                                   | Vue card and SVG outline previews verified                                | Vue previews use explicit synchronization on the secondary graph                         |
+| Virtualization                            | Unverified                                                                | External HTML content may need explicit view lifecycle integration                       |
 | JSON serialization                        | Prefer shape registry plus serializable data/props; round-trip unverified | Component definitions, DOM containers and functions are not portable graph data          |
-| Pure SVG export                           | Does not include external Vue content                                     | Official content is in SVG, but contains embedded HTML rather than native vectors        |
-| PNG/JPEG export                           | No HTML-layer composition adapter implemented                             | SVG-based export needs browser/font/image/CSS validation even with the official renderer |
+| Pure SVG export                           | Optional native SVG representations for Vue cards                         | Official content is in SVG, but contains embedded HTML rather than native vectors        |
+| PNG/JPEG export                           | Uses the same X6 SVG export hook for static cards                         | SVG-based export needs browser/font/image/CSS validation even with the official renderer |
 | SSR                                       | No server-rendered graph guarantee; initialize client-side                | This comparison establishes no official Vue-node SSR guarantee                           |
 
-An export adapter would need to compose SVG and HTML and define handling of
-fonts, images, async components and resources. Arbitrary cross-layer ordering
-requires a separate rendering design. Neither is solved by renaming the package,
-enabling Teleport or adding a synchronization listener.
+See the [migration guide](./migration.md#keep-native-ports-reachable) for native
+port hit areas and both MiniMap setups.
+
+The [SVG and PNG export hook](./export.md) uses caller-supplied SVG cards.
+Reproducing the live HTML appearance requires capturing the rendered graph.
+Arbitrary cross-layer ordering requires a separate rendering design.
 
 ## Performance: what is known
 

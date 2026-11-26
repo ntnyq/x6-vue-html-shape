@@ -140,6 +140,22 @@ The disposer removes listeners, disconnects the observer and cancels pending
 frames. It does not dispose the graph or unmount live node components. Use
 `graph.dispose()` for page/component teardown.
 
+## SVG and PNG export
+
+### `createVueHtmlSvgExportHook(graph, renderNode)`
+
+Create a fresh hook immediately before each export on the provided graph. The
+factory calls `VueHtmlSvgNodeRenderer` synchronously for each visible Vue HTML
+view on the X6 stage. The renderer receives the X6 node and the graph's owning
+document. Return an SVG element in node-local coordinates, or `null` or
+`undefined` to use the original SVG markup.
+
+The factory copies each card and throws a `TypeError` synchronously if its root
+is outside the SVG namespace or its subtree contains `foreignObject`. The
+returned `beforeSerialize` callback inserts those snapshots into the cloned
+X6 node groups.
+See [SVG and PNG export](../guide/export.md) for a complete example.
+
 ## Node rendering properties
 
 `VueHtmlShapeProperties` describes renderer-specific metadata. Supply ordinary

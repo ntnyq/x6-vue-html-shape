@@ -31,6 +31,7 @@ export default defineConfig({
             { link: '/examples/rich-text-node', text: 'Rich Text Node' },
             { link: '/examples/form-node', text: 'Form Node' },
             { link: '/examples/mixed-board', text: 'Mixed Board' },
+            { link: '/examples/case-flow', text: 'Case Flow' },
           ],
           text: 'Examples',
         },
@@ -53,6 +54,10 @@ export default defineConfig({
             {
               link: '/guide/migration',
               text: 'Migration',
+            },
+            {
+              link: '/guide/export',
+              text: 'SVG and PNG Export',
             },
             {
               link: '/guide/production-readiness',

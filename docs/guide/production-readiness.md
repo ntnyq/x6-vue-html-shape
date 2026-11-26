@@ -8,8 +8,8 @@ every official Vue shape feature.
 ## Current baseline
 
 The `0.0.0` development version declares peer ranges Vue `^3.3.0` and X6
-`^3.0.1`. Repository tests use Vue 3.5.46 and X6 3.1.8. The packed package
-also passed the browser suite in a clean consumer with Vue 3.3.0 and X6 3.0.1.
+`^3.0.1`. Repository tests use Vue 3.5.46 and X6 3.1.8. An earlier packed build
+passed the original browser suite in a clean consumer with Vue 3.3.0 and X6 3.0.1.
 Follow [Getting Started](./getting-started.md) for local evaluation.
 
 ## Implemented behavior
@@ -51,6 +51,10 @@ The browser scenarios run across Chromium, Firefox and WebKit.
 | Real browsers | Unscaled content, custom targets, synchronization restart and return to a newly created layer | `tests/browser/graph.test.ts`                                                             |
 | Real browsers | Pan/zoom of 100 ordinary nodes without individual style mutations                             | `tests/browser/graph.test.ts`                                                             |
 | Real browsers | Scoped provider, input focus/fill, queued-work cleanup and graph disposal                     | `tests/browser/graph.test.ts`                                                             |
+| Real browsers | Dragging from right, bottom and inset ports, plus independent card controls and drag handles  | `tests/browser/migration.test.ts`                                                         |
+| Real browsers | MiniMap zoom and remount with synchronized Vue cards or SVG outlines                          | `tests/browser/migration.test.ts`                                                         |
+| Real browsers | SVG card serialization and PNG pixels under pan, zoom, rotation and cropping                  | `tests/browser/export.test.ts`                                                            |
+| Real browsers | Playground Teleport host timing, Vue I18n locale changes, reset and disposal                  | `tests/browser/playground.test.ts`                                                        |
 | Unit tests    | Dynamic props/classes/styles/interactivity, hidden state and component removal                | `tests/view.test.ts`                                                                      |
 | Unit tests    | Vue state retention, remount option and listener removal                                      | `tests/view.test.ts`                                                                      |
 | Unit tests    | Global components/providers, multiple graphs and duplicate node IDs                           | `tests/teleport.test.ts`                                                                  |
@@ -58,10 +62,15 @@ The browser scenarios run across Chromium, Firefox and WebKit.
 | Unit tests    | Registry collisions, interactive/`contenteditable` guards and layer management                | `tests/index.test.ts`, `tests/layer.test.ts`                                              |
 | Unit tests    | Demo connections, editor data updates and playground teardown                                 | `tests/playground.test.ts`, `tests/richText.test.ts`, `tests/playgroundLifecycle.test.ts` |
 
-Programmatic edge creation in demo tests does not establish pointer-driven port
-connection support. Unit `touchstart` events do not establish real iOS touch or
-input-method behavior. Inherited plugin context is implemented, but Pinia, Router,
-i18n and UI-provider combinations are not individually certified by this suite.
+The migration tests use real mouse dragging and check that the created edge
+references both native ports. The Vue MiniMap test shares providers with the
+main graph and checks that removing the preview unmounts its cards and cleans
+up its HTML layer. See the [port and MiniMap recipes](./migration.md#keep-native-ports-reachable).
+
+The Case Flow playground exercises Vue I18n through a graph-specific Teleport
+host. Pinia, Router and UI-provider combinations require application-level
+validation. Unit `touchstart` events do not establish real iOS touch or
+input-method behavior.
 
 Run `pnpm test:browser` after installing the Playwright browser binaries with
 `pnpm exec playwright install chromium firefox webkit`.
@@ -84,9 +93,9 @@ Safari/iOS versions, including touch dragging, input methods and popups.
 
 ## Architectural limitations
 
-- SVG export and X6 SVG-based image export do not include the separate HTML
-  content. A future export adapter must compose the layers and define handling of
-  fonts, images, external resources and asynchronous components.
+- The [SVG and PNG export hook](./export.md) exports a caller-supplied static SVG
+  card. Reproducing the live HTML appearance requires capturing the rendered
+  graph.
 - HTML content is above the SVG layer. Arbitrary interleaving of edges, nodes,
   tools and ports across the two layers is unavailable. Keep ports outside opaque
   HTML regions and verify connection tools in the application.
@@ -103,19 +112,16 @@ Safari/iOS versions, including touch dragging, input methods and popups.
 
 ## Remaining evidence for a stable release
 
-| Area                                             | Current status                     | Acceptance needed                                                       |
-| ------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------- |
-| Safari/iOS devices                               | Automated WebKit coverage only     | Actual target versions, touch, IME and popup acceptance                 |
-| Ports, connection tools, selection and snaplines | Combination coverage missing       | Verify hit targets, stacking, dragging and selected-state visuals       |
-| History, clipboard and embedding                 | Complete workflows unverified      | Undo/redo and serialization/recreation with registered components       |
-| Scroller, minimap and virtualization             | Unverified                         | Coordinate offsets, secondary graph rendering and view remount/disposal |
-| Comparative speed and memory                     | No benchmark published             | Identical workloads and recorded frame/heap measurements                |
-| Export                                           | HTML composition adapter absent    | Implement an adapter or explicitly exclude the requirement              |
-| Cross-layer interleaving                         | Not supported by this architecture | Accept a fixed layer policy or design another rendering strategy        |
-
-These are remaining acceptance criteria, not supported features hidden behind an
-option. In particular, stronger test coverage cannot by itself supply export or
-arbitrary layer interleaving.
+| Area                                             | Current status                     | Acceptance needed                                                      |
+| ------------------------------------------------ | ---------------------------------- | ---------------------------------------------------------------------- |
+| Safari/iOS devices                               | Automated WebKit coverage only     | Actual target versions, touch, IME and popup acceptance                |
+| Ports, connection tools, selection and snaplines | Native port dragging covered       | Verify tooling combinations, stacking and selected-state visuals       |
+| History, clipboard and embedding                 | Complete workflows unverified      | Undo/redo and serialization/recreation with registered components      |
+| Scroller and virtualization                      | Unverified                         | Check coordinate offsets and viewport-driven view remount and disposal |
+| MiniMap                                          | Vue and SVG previews covered       | Verify combinations with Scroller and the application's other plugins  |
+| Comparative speed and memory                     | No benchmark published             | Identical workloads and recorded frame/heap measurements               |
+| Export                                           | Static SVG and PNG cards verified  | Validate application card renderers, resources and export bounds       |
+| Cross-layer interleaving                         | Not supported by this architecture | Accept a fixed layer policy or design another rendering strategy       |
 
 Validate the actual combinations of selection, history/undo, ports, connection
 tools, embedding, scroller, minimap and viewport virtualization used by consumers.

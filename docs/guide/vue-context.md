@@ -82,6 +82,10 @@ onBeforeUnmount(() => {
 through the app that renders the host. Providers inside some unrelated component
 subtree are not ancestors of the host and therefore do not become available.
 
+The [Case Flow playground](../examples/case-flow.md) uses the same sequence with
+Vue I18n. Change the card language, reset the graph, or switch demos and return
+to see how translated cards update and remount.
+
 ## Lifecycle contract
 
 - Create a host per graph. Two graphs can use identical node IDs and different

@@ -1,5 +1,6 @@
 export * from './constants'
 export * from './events'
+export * from './export'
 export * from './install'
 export { ensureVueHtmlLayer, removeVueHtmlLayer } from './layer'
 export * from './node'

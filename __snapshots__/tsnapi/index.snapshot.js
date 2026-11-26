@@ -31,6 +31,7 @@ export class VueHtmlShapeView extends NodeView {
 // #region Functions
 export function clearVueShapeComponents() {}
 export function createVueHtmlShapePlugin(_) {}
+export function createVueHtmlSvgExportHook(_, _) {}
 export function createVueHtmlTeleport(_) {}
 export function ensureVueHtmlLayer(_) {}
 export function getVueShapeComponent(_) {}

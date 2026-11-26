@@ -18,9 +18,14 @@ import 'element-plus/theme-chalk/el-switch.css'
 import 'x6-vue-html-shape/style.css'
 import 'uno.css'
 import './custom.css'
+import { createPlaygroundI18n } from '../../components/playground/i18n'
 
 const theme: Theme = {
   ...DefaultTheme,
+  async enhanceApp(context) {
+    await DefaultTheme.enhanceApp?.(context)
+    context.app.use(createPlaygroundI18n())
+  },
 }
 
 export default theme

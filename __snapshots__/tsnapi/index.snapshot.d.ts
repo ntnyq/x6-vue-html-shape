@@ -66,6 +66,7 @@ export interface VueShapeProvide<N extends Node = Node> {
 
 // #region Types
 export type Primer = 'rect' | 'circle' | 'path' | 'ellipse' | 'polygon' | 'polyline';
+export type VueHtmlSvgNodeRenderer = (_: Node, _: Document) => SVGElement | null | undefined;
 export type VueShapeComponent<N extends Node = Node> = Component<VueShapeComponentProps<N>>;
 // #endregion
 
@@ -102,6 +103,7 @@ export declare class VueHtmlShapeView extends NodeView {
 // #region Functions
 export declare function clearVueShapeComponents(): void;
 export declare function createVueHtmlShapePlugin(_?: VueHtmlShapePluginOptions): Plugin;
+export declare function createVueHtmlSvgExportHook(_: Graph, _: VueHtmlSvgNodeRenderer): (this: Graph, _: SVGSVGElement) => void;
 export declare function createVueHtmlTeleport(_: Graph): Component;
 export declare function ensureVueHtmlLayer(_: Graph): HTMLElement;
 export declare function getVueShapeComponent(_: string): Component | undefined;
